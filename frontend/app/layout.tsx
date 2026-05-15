@@ -11,11 +11,11 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "AdPilot AI — Generate Google Ads That Convert",
-  description: "AI-powered Google Ads assistant. Generate high-CTR RSA ads, avoid moderation bans, and boost conversions with GPT-4 and Claude.",
+  description: "AI-powered Google Ads assistant. Generate high-CTR RSA ads, avoid moderation bans, and boost conversions with GPT-5 and Claude.",
   keywords: "Google Ads, AI ads generator, RSA ads, CTR optimization, ad copy AI",
   openGraph: {
     title: "AdPilot AI — Premium AI Google Ads Platform",
-    description: "Generate high-converting Google Ads with AI. Powered by GPT-4 + Claude.",
+    description: "Generate high-converting Google Ads with AI. Powered by GPT-5 + Claude.",
     type: "website",
   },
 };

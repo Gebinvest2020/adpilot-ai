@@ -1,33 +1,51 @@
+"use client";
+
 import Link from "next/link";
 import { Zap, X, Globe, Link2 } from "lucide-react";
-
-const footerLinks = {
-  Product: [
-    { label: "RSA Generator", href: "/dashboard/rsa-generator" },
-    { label: "Moderation Checker", href: "/dashboard/moderation-checker" },
-    { label: "CTR Analyzer", href: "/dashboard/ctr-analyzer" },
-    { label: "Pricing", href: "/pricing" },
-  ],
-  Company: [
-    { label: "About", href: "#" },
-    { label: "Blog", href: "#" },
-    { label: "Careers", href: "#" },
-    { label: "Press Kit", href: "#" },
-  ],
-  Resources: [
-    { label: "Documentation", href: "#" },
-    { label: "API Reference", href: "#" },
-    { label: "Status Page", href: "#" },
-    { label: "Support", href: "#" },
-  ],
-  Legal: [
-    { label: "Privacy Policy", href: "#" },
-    { label: "Terms of Service", href: "#" },
-    { label: "Cookie Policy", href: "#" },
-  ],
-};
+import { useT } from "@/lib/i18n";
 
 export default function Footer() {
+  const t = useT();
+  const f = t.footer;
+
+  const footerLinks = [
+    {
+      heading: f.columns.product,
+      links: [
+        { label: f.links.rsaGenerator, href: "/dashboard/rsa-generator" },
+        { label: f.links.moderationChecker, href: "/dashboard/moderation-checker" },
+        { label: f.links.ctrAnalyzer, href: "/dashboard/ctr-analyzer" },
+        { label: f.links.pricing, href: "/pricing" },
+      ],
+    },
+    {
+      heading: f.columns.company,
+      links: [
+        { label: f.links.about, href: "#" },
+        { label: f.links.blog, href: "#" },
+        { label: f.links.careers, href: "#" },
+        { label: f.links.pressKit, href: "#" },
+      ],
+    },
+    {
+      heading: f.columns.resources,
+      links: [
+        { label: f.links.documentation, href: "#" },
+        { label: f.links.apiReference, href: "#" },
+        { label: f.links.statusPage, href: "#" },
+        { label: f.links.support, href: "#" },
+      ],
+    },
+    {
+      heading: f.columns.legal,
+      links: [
+        { label: f.links.privacyPolicy, href: "#" },
+        { label: f.links.termsOfService, href: "#" },
+        { label: f.links.cookiePolicy, href: "#" },
+      ],
+    },
+  ];
+
   return (
     <footer className="relative border-t border-white/[0.06]" style={{ background: '#050508' }}>
       {/* Top gradient line */}
@@ -47,7 +65,7 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-sm text-white/40 leading-relaxed mb-6 max-w-xs">
-              The AI-powered Google Ads platform trusted by 10,000+ marketers to generate high-CTR ads and boost conversions.
+              {f.brandDesc}
             </p>
             <div className="flex items-center gap-3">
               <a href="#" className="p-2 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-white/50 hover:text-white transition-all duration-200">
@@ -63,12 +81,12 @@ export default function Footer() {
           </div>
 
           {/* Links */}
-          {Object.entries(footerLinks).map(([category, links]) => (
-            <div key={category}>
-              <h4 className="text-xs font-semibold text-white/30 uppercase tracking-widest mb-4">{category}</h4>
+          {footerLinks.map((col) => (
+            <div key={col.heading}>
+              <h4 className="text-xs font-semibold text-white/30 uppercase tracking-widest mb-4">{col.heading}</h4>
               <ul className="space-y-3">
-                {links.map((link) => (
-                  <li key={link.label}>
+                {col.links.map((link) => (
+                  <li key={link.href + link.label}>
                     <Link
                       href={link.href}
                       className="text-sm text-white/50 hover:text-white/90 transition-colors duration-200"
@@ -85,11 +103,11 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="pt-8 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-white/30">
-            © 2025 AdPilot AI, Inc. All rights reserved.
+            {f.copyright}
           </p>
           <div className="flex items-center gap-1 text-xs text-white/30">
-            <span>Powered by</span>
-            <span className="text-indigo-400 font-medium">GPT-4</span>
+            <span>{f.poweredBy}</span>
+            <span className="text-indigo-400 font-medium">GPT-5</span>
             <span>+</span>
             <span className="text-violet-400 font-medium">Claude</span>
           </div>

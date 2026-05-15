@@ -103,7 +103,7 @@ export const rsaExampleResults = [
       "Maximize Every Click You Pay For",
     ],
     descriptions: [
-      "Stop guessing what works. AdPilot AI uses GPT-4 and Claude to write ads your audience can't ignore. Start free today.",
+      "Stop guessing what works. AdPilot AI uses GPT-5 and Claude to write ads your audience can't ignore. Start free today.",
       "Built for performance marketers who demand results. CTR analyzer, moderation shield, and RSA generator in one platform.",
     ],
   },
@@ -339,6 +339,90 @@ export const rsaFullResults: RSAFullResult = {
         issue: "Specific performance claim — must be substantiated with real data or a disclaimer.",
         severity: "low",
         safer: "Significantly Boost Your ROI",
+      },
+    ],
+  },
+};
+
+// ─── Russian RSA mock — CIS-native Google Ads copy, no literal EN translations ─
+
+export const rsaFullResultsRu: RSAFullResult = {
+  generatedAt: "Только что · 2.3с",
+  headlines: [
+    // All texts verified ≤ 30 chars
+    { id: "h1",  text: "Контекст под ключ за 3 дня",  strength: "excellent", strengthScore: 95, tip: "Конкретный срок убирает главное сомнение" },
+    { id: "h2",  text: "Лиды из Google от 200 руб.",   strength: "excellent", strengthScore: 93, tip: "Цена лида — прямая выгода для клиента" },
+    { id: "h3",  text: "Бесплатный аудит рекламы",     strength: "excellent", strengthScore: 92, tip: "«Бесплатно» кратно повышает CTR" },
+    { id: "h4",  text: "CPC снизим вдвое — факты",     strength: "good",      strengthScore: 88, tip: "Снижение стоимости клика — понятная выгода" },
+    { id: "h5",  text: "Реклама без слива бюджета",    strength: "excellent", strengthScore: 91, tip: "Боль-заголовок с конкретным обещанием" },
+    { id: "h6",  text: "500+ клиентов. Рост CTR ×3",   strength: "good",      strengthScore: 87, tip: "Цифры + соцдоказательство — сильная связка" },
+    { id: "h7",  text: "Первые лиды за 7 дней",        strength: "excellent", strengthScore: 90, tip: "Быстрый результат — главный триггер доверия" },
+    { id: "h8",  text: "Настройка и ведение Ads",      strength: "good",      strengthScore: 84, tip: "Комплексный сервис снижает число вопросов" },
+    { id: "h9",  text: "Google Ads с гарантией",       strength: "good",      strengthScore: 83, tip: "Гарантия снижает страх первой покупки" },
+    { id: "h10", text: "Оплата за результат — факт",   strength: "average",   strengthScore: 74, tip: "Привлекает, но требует пояснения в тексте" },
+    { id: "h11", text: "Аудит Google Ads бесплатно",   strength: "excellent", strengthScore: 92, tip: "Лид-магнит № 1 в B2B-контексте" },
+    { id: "h12", text: "Без переплат. Всё прозрачно",  strength: "good",      strengthScore: 85, tip: "Прозрачность — сильный дифференциатор" },
+    { id: "h13", text: "Запускаем за 1 рабочий день",  strength: "excellent", strengthScore: 91, tip: "Скорость запуска = снятие ключевого барьера" },
+    { id: "h14", text: "Google Partner — 12 лет",      strength: "average",   strengthScore: 72, tip: "Авторитет партнёрства Google, но нужна цифра" },
+    { id: "h15", text: "Ваш рост — наша работа",       strength: "good",      strengthScore: 81, tip: "Партнёрский фрейм — подходит для B2B" },
+  ],
+  descriptions: [
+    {
+      id: "d1",
+      text: "Ведём Google Ads для 500+ клиентов. CTR в среднем ×3. Первый аудит — бесплатно.",
+      strength: "excellent",
+      strengthScore: 94,
+      tip: "Соцдоказательство + конкретная метрика + CTA — три компонента в одном",
+    },
+    {
+      id: "d2",
+      text: "Бюджет уходит — заявок нет? Берём слабую кампанию и делаем из неё источник лидов.",
+      strength: "excellent",
+      strengthScore: 92,
+      tip: "Открывается болью — самый вовлекающий формат для CIS-рынка",
+    },
+    {
+      id: "d3",
+      text: "Сертифицированный партнёр Google с 2012 года. Работаем без договора на год.",
+      strength: "good",
+      strengthScore: 86,
+      tip: "Стек доверия снимает страх перед новым подрядчиком",
+    },
+    {
+      id: "d4",
+      text: "От старта до первых заявок — 7 дней. Еженедельные отчёты. Персональный менеджер.",
+      strength: "good",
+      strengthScore: 84,
+      tip: "Конкретный срок + сервис = убирает два главных возражения",
+    },
+  ],
+  ctaSuggestions: [
+    "Получить бесплатный аудит",
+    "Оставить заявку",
+    "Рассчитать стоимость",
+    "Записаться на созвон",
+    "Посмотреть кейсы",
+    "Узнать цену лида",
+    "Получить медиаплан",
+    "Начать работу",
+    "Подключить рекламу",
+    "Обсудить задачу",
+  ],
+  moderation: {
+    score: 84,
+    level: "LOW",
+    flags: [
+      {
+        field: "Лиды из Google от 200 руб.",
+        issue: "Конкретная цена — Google может запросить подтверждение заявленной стоимости.",
+        severity: "low",
+        safer: "Лиды из Google. Выгодная цена.",
+      },
+      {
+        field: "500+ клиентов. Рост CTR ×3",
+        issue: "Конкретная метрика роста требует подтверждения реальными данными из аккаунта.",
+        severity: "medium",
+        safer: "500+ клиентов. Реальный рост CTR",
       },
     ],
   },

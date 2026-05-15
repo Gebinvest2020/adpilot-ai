@@ -22,7 +22,7 @@ export const en: Translations = {
   },
 
   hero: {
-    badge: "Powered by GPT-4 + Claude",
+    badge: "Powered by GPT-5 + Claude",
     headline1: "Generate Google Ads",
     headline2: "That Convert",
     subtitle:
@@ -50,7 +50,7 @@ export const en: Translations = {
       {
         title: "RSA Generator",
         description:
-          "Generate 15 headline + 4 description combos optimized for maximum CTR using GPT-4 and real Google Ads data.",
+          "Generate 15 headline + 4 description combos optimized for maximum CTR using GPT-5 and real Google Ads data.",
       },
       {
         title: "Moderation Shield",
@@ -95,7 +95,7 @@ export const en: Translations = {
       {
         title: "AI Generates Variations",
         description:
-          "GPT-4 and Claude analyze thousands of top-performing ads to craft multiple optimized variants in seconds.",
+          "GPT-5 and Claude analyze thousands of top-performing ads to craft multiple optimized variants in seconds.",
       },
       {
         title: "Review & Launch",
@@ -252,5 +252,34 @@ export const en: Translations = {
     },
     riskLabels: { low: "LOW RISK", medium: "MEDIUM RISK", high: "HIGH RISK" },
     severityLabels: { low: "low", medium: "medium", high: "high" },
+  },
+
+  footer: {
+    brandDesc: "The AI-powered Google Ads platform trusted by 10,000+ marketers to generate high-CTR ads and boost conversions.",
+    copyright: "© 2025 AdPilot AI, Inc. All rights reserved.",
+    poweredBy: "Powered by",
+    columns: {
+      product: "Product",
+      company: "Company",
+      resources: "Resources",
+      legal: "Legal",
+    },
+    links: {
+      rsaGenerator: "RSA Generator",
+      moderationChecker: "Moderation Checker",
+      ctrAnalyzer: "CTR Analyzer",
+      pricing: "Pricing",
+      about: "About",
+      blog: "Blog",
+      careers: "Careers",
+      pressKit: "Press Kit",
+      documentation: "Documentation",
+      apiReference: "API Reference",
+      statusPage: "Status Page",
+      support: "Support",
+      privacyPolicy: "Privacy Policy",
+      termsOfService: "Terms of Service",
+      cookiePolicy: "Cookie Policy",
+    },
   },
 };

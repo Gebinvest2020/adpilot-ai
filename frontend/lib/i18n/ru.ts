@@ -22,7 +22,7 @@ export const ru: Translations = {
   },
 
   hero: {
-    badge: "На базе GPT-4 + Claude",
+    badge: "На базе GPT-5 + Claude",
     headline1: "Создавайте Google Ads,",
     headline2: "которые продают",
     subtitle:
@@ -50,7 +50,7 @@ export const ru: Translations = {
       {
         title: "RSA Генератор",
         description:
-          "Создавайте 15 заголовков и 4 описания, оптимизированных для максимального CTR, на основе GPT-4 и реальных данных Google Ads.",
+          "Создавайте 15 заголовков и 4 описания, оптимизированных для максимального CTR, на основе GPT-5 и реальных данных Google Ads.",
       },
       {
         title: "Проверка модерации",
@@ -95,7 +95,7 @@ export const ru: Translations = {
       {
         title: "AI создаёт варианты",
         description:
-          "GPT-4 и Claude анализируют тысячи топовых объявлений и создают несколько оптимизированных вариантов за секунды.",
+          "GPT-5 и Claude анализируют тысячи топовых объявлений и создают несколько оптимизированных вариантов за секунды.",
       },
       {
         title: "Проверяйте и запускайте",
@@ -257,5 +257,34 @@ export const ru: Translations = {
     },
     riskLabels: { low: "НИЗКИЙ РИСК", medium: "СРЕДНИЙ РИСК", high: "ВЫСОКИЙ РИСК" },
     severityLabels: { low: "низкий", medium: "средний", high: "высокий" },
+  },
+
+  footer: {
+    brandDesc: "AI-платформа для Google Ads, которой доверяют 10 000+ маркетологов для создания высококликабельных объявлений и роста конверсий.",
+    copyright: "© 2025 AdPilot AI, Inc. Все права защищены.",
+    poweredBy: "Работает на базе",
+    columns: {
+      product: "Продукт",
+      company: "Компания",
+      resources: "Ресурсы",
+      legal: "Правовая информация",
+    },
+    links: {
+      rsaGenerator: "RSA Генератор",
+      moderationChecker: "Проверка модерации",
+      ctrAnalyzer: "Анализ CTR",
+      pricing: "Тарифы",
+      about: "О нас",
+      blog: "Блог",
+      careers: "Вакансии",
+      pressKit: "Пресс-кит",
+      documentation: "Документация",
+      apiReference: "API Справочник",
+      statusPage: "Статус системы",
+      support: "Поддержка",
+      privacyPolicy: "Политика конфиденциальности",
+      termsOfService: "Условия использования",
+      cookiePolicy: "Политика cookies",
+    },
   },
 };

@@ -145,4 +145,33 @@ export interface Translations {
     riskLabels: { low: string; medium: string; high: string };
     severityLabels: { low: string; medium: string; high: string };
   };
+
+  footer: {
+    brandDesc: string;
+    copyright: string;
+    poweredBy: string;
+    columns: {
+      product: string;
+      company: string;
+      resources: string;
+      legal: string;
+    };
+    links: {
+      rsaGenerator: string;
+      moderationChecker: string;
+      ctrAnalyzer: string;
+      pricing: string;
+      about: string;
+      blog: string;
+      careers: string;
+      pressKit: string;
+      documentation: string;
+      apiReference: string;
+      statusPage: string;
+      support: string;
+      privacyPolicy: string;
+      termsOfService: string;
+      cookiePolicy: string;
+    };
+  };
 }

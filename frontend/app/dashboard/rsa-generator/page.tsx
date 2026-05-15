@@ -1,43 +1,70 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap, Copy, Download, Check, Globe, Target, Sparkles,
   AlertTriangle, ChevronDown, ArrowRight, ExternalLink,
-  RotateCcw, Shield, Info, Megaphone, TrendingUp,
+  RotateCcw, Shield, Info, Megaphone, TrendingUp, Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { rsaFullResults, type RSAFullResult, type RSAHeadline, type RSADescription } from "@/lib/mock-data";
+import { rsaFullResults, rsaFullResultsRu, type RSAFullResult, type RSAHeadline, type RSADescription } from "@/lib/mock-data";
 import { useT, interp } from "@/lib/i18n";
 
 // ─── Options ────────────────────────────────────────────────────────────────
 
-const COUNTRIES = [
-  { code: "US", name: "United States",  flag: "🇺🇸" },
-  { code: "GB", name: "United Kingdom", flag: "🇬🇧" },
-  { code: "CA", name: "Canada",         flag: "🇨🇦" },
-  { code: "AU", name: "Australia",      flag: "🇦🇺" },
-  { code: "DE", name: "Germany",        flag: "🇩🇪" },
-  { code: "FR", name: "France",         flag: "🇫🇷" },
-  { code: "ES", name: "Spain",          flag: "🇪🇸" },
-  { code: "IT", name: "Italy",          flag: "🇮🇹" },
-  { code: "NL", name: "Netherlands",    flag: "🇳🇱" },
-  { code: "BR", name: "Brazil",         flag: "🇧🇷" },
-  { code: "IN", name: "India",          flag: "🇮🇳" },
-  { code: "JP", name: "Japan",          flag: "🇯🇵" },
-  { code: "SG", name: "Singapore",      flag: "🇸🇬" },
-  { code: "AE", name: "UAE",            flag: "🇦🇪" },
-  { code: "MX", name: "Mexico",         flag: "🇲🇽" },
-  { code: "PL", name: "Poland",         flag: "🇵🇱" },
-  { code: "SE", name: "Sweden",         flag: "🇸🇪" },
-  { code: "CH", name: "Switzerland",    flag: "🇨🇭" },
-  { code: "NO", name: "Norway",         flag: "🇳🇴" },
-  { code: "DK", name: "Denmark",        flag: "🇩🇰" },
+type CountryEntry = { code: string; name: string; flag: string; group: "cis" | "popular" | "other" };
+
+const GROUP_LABELS: Record<"cis" | "popular" | "other", string> = {
+  cis:     "CIS & Eastern Europe",
+  popular: "Popular Markets",
+  other:   "More Countries",
+};
+
+const COUNTRIES: CountryEntry[] = [
+  // ── CIS & Eastern Europe — shown first for CIS marketers ──
+  { code: "RU",  name: "Russia",          flag: "🇷🇺", group: "cis" },
+  { code: "UA",  name: "Ukraine",         flag: "🇺🇦", group: "cis" },
+  { code: "KZ",  name: "Kazakhstan",      flag: "🇰🇿", group: "cis" },
+  { code: "BY",  name: "Belarus",         flag: "🇧🇾", group: "cis" },
+  { code: "UZ",  name: "Uzbekistan",      flag: "🇺🇿", group: "cis" },
+  { code: "AZ",  name: "Azerbaijan",      flag: "🇦🇿", group: "cis" },
+  { code: "AM",  name: "Armenia",         flag: "🇦🇲", group: "cis" },
+  { code: "GE",  name: "Georgia",         flag: "🇬🇪", group: "cis" },
+  { code: "MD",  name: "Moldova",         flag: "🇲🇩", group: "cis" },
+  { code: "KG",  name: "Kyrgyzstan",      flag: "🇰🇬", group: "cis" },
+  { code: "TJ",  name: "Tajikistan",      flag: "🇹🇯", group: "cis" },
+  { code: "CIS", name: "CIS Region",      flag: "🌐",  group: "cis" },
+  { code: "CEE", name: "Eastern Europe",  flag: "🌍",  group: "cis" },
+
+  // ── Popular ad markets (high Google Ads spend globally) ──
+  { code: "US", name: "United States",  flag: "🇺🇸", group: "popular" },
+  { code: "GB", name: "United Kingdom", flag: "🇬🇧", group: "popular" },
+  { code: "DE", name: "Germany",        flag: "🇩🇪", group: "popular" },
+  { code: "AU", name: "Australia",      flag: "🇦🇺", group: "popular" },
+  { code: "CA", name: "Canada",         flag: "🇨🇦", group: "popular" },
+  { code: "FR", name: "France",         flag: "🇫🇷", group: "popular" },
+  { code: "NL", name: "Netherlands",    flag: "🇳🇱", group: "popular" },
+  { code: "CH", name: "Switzerland",    flag: "🇨🇭", group: "popular" },
+  { code: "AE", name: "UAE",            flag: "🇦🇪", group: "popular" },
+  { code: "SG", name: "Singapore",      flag: "🇸🇬", group: "popular" },
+
+  // ── More countries ──
+  { code: "ES", name: "Spain",     flag: "🇪🇸", group: "other" },
+  { code: "IT", name: "Italy",     flag: "🇮🇹", group: "other" },
+  { code: "BR", name: "Brazil",    flag: "🇧🇷", group: "other" },
+  { code: "IN", name: "India",     flag: "🇮🇳", group: "other" },
+  { code: "JP", name: "Japan",     flag: "🇯🇵", group: "other" },
+  { code: "MX", name: "Mexico",    flag: "🇲🇽", group: "other" },
+  { code: "PL", name: "Poland",    flag: "🇵🇱", group: "other" },
+  { code: "SE", name: "Sweden",    flag: "🇸🇪", group: "other" },
+  { code: "NO", name: "Norway",    flag: "🇳🇴", group: "other" },
+  { code: "DK", name: "Denmark",   flag: "🇩🇰", group: "other" },
 ];
 
 const LANGUAGES = [
-  "English", "Spanish", "French", "German", "Portuguese",
+  "English", "Russian", "Spanish", "French", "German", "Portuguese",
   "Italian", "Dutch", "Japanese", "Korean", "Chinese (Simplified)",
   "Arabic", "Polish", "Swedish", "Norwegian", "Danish",
 ];
@@ -88,6 +115,183 @@ function SelectField({
         </select>
         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/25 pointer-events-none" />
       </div>
+    </div>
+  );
+}
+
+// ─── CountrySelect ────────────────────────────────────────────────────────────
+
+function CountrySelect({
+  label,
+  value,
+  onChange,
+  options,
+  placeholder,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: CountryEntry[];
+  placeholder: string;
+  icon?: React.ElementType;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
+
+  const selected = options.find((o) => o.code === value);
+
+  const handleOpen = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + 6, left: rect.left, width: rect.width });
+    }
+    setOpen(true);
+    setSearch("");
+    setTimeout(() => searchRef.current?.focus(), 50);
+  };
+
+  const handleClose = () => setOpen(false);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handle = (e: MouseEvent) => {
+      if (
+        dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
+        triggerRef.current  && !triggerRef.current.contains(e.target as Node)
+      ) {
+        handleClose();
+      }
+    };
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [open]);
+
+  // Close on scroll or resize to avoid stale position
+  useEffect(() => {
+    if (!open) return;
+    const close = () => handleClose();
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [open]);
+
+  const q = search.toLowerCase();
+  const filtered = q
+    ? options.filter((o) => o.name.toLowerCase().includes(q) || o.code.toLowerCase().includes(q))
+    : options;
+
+  const groups: { key: "cis" | "popular" | "other"; items: CountryEntry[] }[] = [
+    { key: "cis",     items: filtered.filter((o) => o.group === "cis")     },
+    { key: "popular", items: filtered.filter((o) => o.group === "popular") },
+    { key: "other",   items: filtered.filter((o) => o.group === "other")   },
+  ].filter((g) => g.items.length > 0);
+
+  const dropdown = (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          ref={dropdownRef}
+          initial={{ opacity: 0, y: -6, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -6, scale: 0.97 }}
+          transition={{ duration: 0.14, ease: "easeOut" }}
+          style={{ position: "fixed", top: pos.top, left: pos.left, width: pos.width, zIndex: 9999 }}
+          className="rounded-xl border border-white/[0.1] bg-[#0d0d14] shadow-2xl shadow-black/70 overflow-hidden"
+        >
+          {/* Search input */}
+          <div className="p-2 border-b border-white/[0.06]">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-white/25 pointer-events-none" />
+              <input
+                ref={searchRef}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search countries..."
+                className="w-full pl-7 pr-3 py-2 rounded-lg bg-white/[0.05] border border-white/[0.06] text-xs text-white placeholder-white/20 focus:outline-none focus:border-indigo-500/30 transition-colors"
+              />
+            </div>
+          </div>
+
+          {/* Grouped list */}
+          <div className="overflow-y-auto max-h-64 overscroll-contain">
+            {groups.length === 0 ? (
+              <p className="px-4 py-6 text-xs text-white/25 text-center">No results</p>
+            ) : (
+              groups.map(({ key, items }) => (
+                <div key={key}>
+                  <div className="sticky top-0 px-3 pt-2.5 pb-1 text-[9px] font-bold uppercase tracking-widest text-white/25 bg-[#0d0d14]">
+                    {GROUP_LABELS[key]}
+                  </div>
+                  {items.map((country) => (
+                    <button
+                      key={country.code}
+                      type="button"
+                      onClick={() => { onChange(country.code); handleClose(); }}
+                      className={cn(
+                        "w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors duration-100 hover:bg-white/[0.06] active:bg-white/[0.09]",
+                        value === country.code
+                          ? "bg-indigo-500/10 text-indigo-300"
+                          : "text-white/70"
+                      )}
+                    >
+                      <span className="text-base leading-none w-5 text-center flex-shrink-0">{country.flag}</span>
+                      <span className="text-sm leading-none flex-1 min-w-0 truncate">{country.name}</span>
+                      {value === country.code && <Check className="w-3 h-3 flex-shrink-0 text-indigo-400" />}
+                    </button>
+                  ))}
+                </div>
+              ))
+            )}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
+  return (
+    <div>
+      <label className="flex items-center gap-1.5 text-[10px] font-bold text-white/35 uppercase tracking-widest mb-2">
+        {Icon && <Icon className="w-3 h-3" />}
+        {label}
+      </label>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={open ? handleClose : handleOpen}
+        className={cn(
+          "w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border text-sm transition-all cursor-pointer",
+          open
+            ? "border-indigo-500/40 ring-1 ring-indigo-500/15 bg-white/[0.04]"
+            : "border-white/[0.08] bg-white/[0.04] hover:border-white/[0.12]",
+          !selected ? "text-white/30" : "text-white"
+        )}
+      >
+        {selected ? (
+          <span className="flex items-center gap-2 min-w-0">
+            <span className="text-base leading-none flex-shrink-0">{selected.flag}</span>
+            <span className="text-sm truncate">{selected.name}</span>
+          </span>
+        ) : (
+          <span className="truncate">{placeholder}</span>
+        )}
+        <motion.span
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: 0.2, ease: "easeInOut" }}
+          className="flex-shrink-0"
+        >
+          <ChevronDown className="w-3.5 h-3.5 text-white/25" />
+        </motion.span>
+      </button>
+      {typeof document !== "undefined" && createPortal(dropdown, document.body)}
     </div>
   );
 }
@@ -402,7 +606,10 @@ export default function RSAGeneratorPage() {
       await new Promise((res) => setTimeout(res, 370));
     }
 
-    setResults(rsaFullResults);
+    // Language of the ad copy is driven by the form's language field,
+    // not the UI locale. Russian UI + English ads → English mock, and vice versa.
+    const useRussian = form.language === "Russian";
+    setResults(useRussian ? rsaFullResultsRu : rsaFullResults);
     setLoading(false);
   };
 
@@ -506,7 +713,7 @@ export default function RSAGeneratorPage() {
 
               {/* Country + Language */}
               <div className="grid grid-cols-2 gap-3">
-                <SelectField
+                <CountrySelect
                   label={r.countryLabel}
                   value={form.country}
                   onChange={(v) => setForm({ ...form, country: v })}
