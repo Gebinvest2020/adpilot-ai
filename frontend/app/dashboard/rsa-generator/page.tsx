@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap, Copy, Download, Check, Globe, Target, Sparkles,
   AlertTriangle, ChevronDown, ArrowRight, ExternalLink,
-  RotateCcw, Shield, Info, Megaphone, TrendingUp, Search,
+  RotateCcw, Shield, Info, Megaphone, TrendingUp, Search, Brain,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { RSAFullResult, RSAHeadline, RSADescription } from "@/lib/mock-data";
@@ -718,6 +718,45 @@ export default function RSAGeneratorPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  /** Call the server-side AI route; fall back to rule-based generator on any error. */
+  const fetchRSAResult = async (): Promise<RSAFullResult> => {
+    try {
+      const res = await fetch("/api/ai/rsa-generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          niche:       form.niche,
+          countryCode: form.country,
+          language:    form.language,
+          goal:        form.goal,
+          tone:        form.tone,
+        }),
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data: unknown = await res.json();
+      // Reject if server returned an error payload
+      if (
+        typeof data === "object" && data !== null &&
+        "error" in data && typeof (data as Record<string, unknown>).error === "string"
+      ) {
+        throw new Error((data as Record<string, unknown>).error as string);
+      }
+
+      // Basic shape validation before trusting the response
+      const d = data as Partial<RSAFullResult>;
+      if (!Array.isArray(d.headlines) || d.headlines.length === 0) {
+        throw new Error("Invalid response shape");
+      }
+
+      return data as RSAFullResult;
+    } catch {
+      // Fall back to rule-based generator silently
+      return generateRSA(form.niche, form.country, form.language, form.goal, form.tone);
+    }
+  };
+
   const handleGenerate = async () => {
     setLoading(true);
     setResults(null);
@@ -729,19 +768,22 @@ export default function RSAGeneratorPage() {
     const STEP_MS = [420, 380, 340, 600, 420, 360];
     const total = r.loadingSteps.length;
 
+    // Kick off the API call in parallel with the animation
+    const resultPromise = fetchRSAResult();
+
     for (let i = 0; i < total; i++) {
       setLoadingStep(i);
-      // Progress: start of step → end of step, incremental
-      setLoadingProgress(Math.round((i / total) * 92)); // reach 92% by last step
+      setLoadingProgress(Math.round((i / total) * 92));
       await new Promise((res) => setTimeout(res, STEP_MS[i] ?? 370));
     }
 
-    // Snap to 100% briefly, then show results
+    // Snap to 100% briefly, then await the result
     setLoadingStep(total);
     setLoadingProgress(100);
     await new Promise((res) => setTimeout(res, 220));
 
-    setResults(generateRSA(form.niche, form.country, form.language, form.goal, form.tone));
+    const result = await resultPromise;
+    setResults(result);
     setLoading(false);
   };
 
@@ -1059,6 +1101,20 @@ export default function RSAGeneratorPage() {
                     </motion.button>
                   </div>
                 </div>
+
+                {/* AI strategy note — shown only when OpenAI generated the result */}
+                {results.strategyNote && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex gap-3 p-3.5 rounded-xl border border-violet-500/20 bg-violet-500/6"
+                  >
+                    <Brain className="w-4 h-4 text-violet-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-white/55 leading-relaxed">
+                      {results.strategyNote}
+                    </p>
+                  </motion.div>
+                )}
 
                 {/* Ad preview */}
                 <AdPreview
