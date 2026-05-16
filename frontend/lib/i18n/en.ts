@@ -201,14 +201,14 @@ export const en: Translations = {
     whatYouGet: ["15 Headlines", "4 Descriptions", "CTA Suggestions", "Risk Score"],
 
     loadingTitle: "Generating your ads...",
+    loadingSubtitle: "Powered by AdPilot AI",
     loadingSteps: [
-      "Analyzing niche & market context...",
-      "Researching top-performing ads...",
-      "Generating 15 headlines...",
-      "Crafting 4 descriptions...",
-      "Optimizing character limits...",
-      "Running moderation check...",
-      "Finalizing & scoring results...",
+      "Analyzing business niche",
+      "Extracting product and location",
+      "Checking sensitive category risks",
+      "Generating RSA headlines",
+      "Building descriptions and CTAs",
+      "Final moderation scan",
     ],
 
     emptyTitle: "Your RSA ads will appear here",

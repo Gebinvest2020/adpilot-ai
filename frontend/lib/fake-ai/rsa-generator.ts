@@ -26,6 +26,33 @@ type SensitiveCategory =
   | "employment"
   | "realestate";
 
+/** Broad niche for semantic headline expansion (non-policy-sensitive categories) */
+type NicheCategory =
+  | "homegoods"
+  | "food"
+  | "clothing"
+  | "electronics"
+  | "furniture"
+  | "fitness"
+  | "travel"
+  | "automotive"
+  | "beauty"
+  | "ecommerce";
+
+// Order matters: more specific first
+const NICHE_KEYWORDS: [NicheCategory, string[]][] = [
+  ["homegoods",   ["подушк", "матрас", "постел", "одеял", "плед", "полотенц", "текстил", "шторы", "штор", "наволочк", "пододеяльник", "постельн", "pillow", "bedding", "mattress", "blanket", "linen", "textile"]],
+  ["furniture",   ["мебел", "диван", "столы", "кресл", "шкаф", "кровать", "полк", "комод", "тумб", "стеллаж", "furniture", "sofa", "wardrobe", "shelf", "dresser"]],
+  ["food",        ["суши", "пицц", "бургер", "шаурм", "роллы", "пирог", "торт", "выпечк", "кондитер", "доставка еды", "фастфуд", "sushi", "pizza", "burger", "food delivery", "bakery", "cake", "pastry"]],
+  ["clothing",    ["одежд", "обув", "платье", "костюм", "куртк", "брюки", "футболк", "носки", "трикот", "джинс", "shirt", "dress", "shoes", "clothing", "jacket", "pants", "jeans", "fashion"]],
+  ["electronics", ["телефон", "ноутбук", "компьютер", "смартфон", "планшет", "электроник", "гаджет", "наушник", "зарядк", "аксессуар", "phone", "laptop", "computer", "tablet", "electronics", "gadget", "headphone"]],
+  ["fitness",     ["фитнес", "спортзал", "тренажер", "йог", "бокс", "качалка", "CrossFit", "gym", "fitness", "yoga", "boxing", "workout", "sport hall"]],
+  ["travel",      ["туризм", "путёвк", "путевк", "курорт", "путешеств", "отель", "гостиниц", "hotel", "travel", "resort", "vacation", "trip"]],
+  ["automotive",  ["автомобил", "шиномонтаж", "кузовн", "автосерви", "автозапч", "car ", "vehicle", "tire"]],
+  ["beauty",      ["салон красот", "парикмахер", "маникюр", "педикюр", "косметолог", "барбер", "beauty salon", "nail", "hair salon", "barbershop"]],
+  ["ecommerce",   ["интернет-магазин", "онлайн-магазин", "online store", "web shop", "интернет магазин"]],
+];
+
 interface CityEntry {
   locRu: string;   // ready-to-use prepositional phrase: "в Ташкенте"
   nameRu: string;  // nominative: "Ташкент"
@@ -42,8 +69,9 @@ interface AudienceEntry {
 interface BusinessContext {
   rawInput: string;
   outputLang: Lang;
-  product: string;       // short headline form (≤20 chars where possible)
-  productDesc: string;   // longer description form (≤30 chars)
+  product: string;          // extracted full name (≤28 chars)
+  productShort: string;     // semantic short form for headline templates (≤16 chars)
+  productDesc: string;      // description-length form (≤28 chars)
   cityLocRu: string | null;      // "в Ташкенте"
   cityNameRu: string | null;     // "Ташкент"
   cityNameEn: string | null;     // "Tashkent"
@@ -53,6 +81,7 @@ interface BusinessContext {
   audienceRu: string | null;     // "для детей"
   audienceEn: string | null;     // "for kids"
   sensitive: SensitiveCategory | null;
+  niche: NicheCategory | null;
   isOnline: boolean;
   isCourse: boolean;
   isDelivery: boolean;
@@ -276,6 +305,239 @@ function genRu(phrase: string): string {
   return [gen, ...parts.slice(1)].join(" ");
 }
 
+/**
+ * Convert Russian genitive plural → nominative plural (best-effort).
+ * "подушек" → "подушки", "матрасов" → "матрасы", "автомобилей" → "автомобили"
+ */
+function nominalizePluralRu(text: string): string {
+  const parts = text.split(" ");
+  const orig = parts[0];
+  const w = orig.toLowerCase();
+  let nom = orig;
+
+  // -шек, -жек (подушек → подушки)
+  if (/[шжзс]ек$/.test(w) && w.length > 4) nom = orig.slice(0, -2) + "ки";
+  // general -ек → -ки (игрушек → игрушки, книжек → книжки)
+  else if (w.endsWith("ек") && w.length > 4) nom = orig.slice(0, -2) + "ки";
+  // -ков → -ки (носков → носки, ботинков → ботинки)
+  else if (w.endsWith("ков") && w.length > 5) nom = orig.slice(0, -3) + "ки";
+  // -ов → -ы (матрасов → матрасы, товаров → товары, диванов → диваны)
+  else if (w.endsWith("ов") && w.length > 4) nom = orig.slice(0, -2) + "ы";
+  // -лей → -ли (автомобилей → автомобили, деталей → детали)
+  else if (w.endsWith("лей") && w.length > 5) nom = orig.slice(0, -2) + "и";
+  // -ей → -и (батарей → батареи, статей → статьи)
+  else if (w.endsWith("ей") && w.length > 4) nom = orig.slice(0, -2) + "и";
+
+  return [nom, ...parts.slice(1)].join(" ");
+}
+
+/**
+ * Normalize "бизнес по продаже X", "магазин X", "продажа X" → extract core product.
+ * Service verbs (ремонт, доставка, аренда) are KEPT as they define the service type.
+ */
+function normalizeBusinessPhrase(text: string): string {
+  let t = text.trim();
+  let m: RegExpMatchArray | null;
+
+  // "бизнес по продаже/реализации/торговле X" → nominalize(X)
+  m = t.match(/^бизнес\s+(?:по\s+)?(?:продаже|реализации|торговле)\s+(.+)/i);
+  if (m) return cap(nominalizePluralRu(m[1].trim()));
+
+  // "бизнес по аренде X" → "аренда X"
+  m = t.match(/^бизнес\s+по\s+аренде\s+(.+)/i);
+  if (m) return `аренда ${m[1].trim()}`;
+
+  // "бизнес по ремонту X" → "ремонт X"
+  m = t.match(/^бизнес\s+по\s+ремонту\s+(.+)/i);
+  if (m) return `ремонт ${m[1].trim()}`;
+
+  // "бизнес по доставке X" → "доставка X"
+  m = t.match(/^бизнес\s+по\s+доставке\s+(.+)/i);
+  if (m) return `доставка ${m[1].trim()}`;
+
+  // "бизнес по [другое] X" → strip prefix, keep X
+  t = t.replace(/^бизнес\s+по\s+/i, "");
+  // "мой бизнес X" / "бизнес X"
+  t = t.replace(/^(?:мой\s+|наш\s+)?бизнес\s*/i, "");
+
+  // "магазин X" → nominalize X
+  m = t.match(/^магазин\s+(.+)/i);
+  if (m) return cap(nominalizePluralRu(m[1].trim()));
+
+  // "компания по продаже X" → nominalize X
+  m = t.match(/^компани[яи]\s+по\s+(?:продаже|реализации)\s+(.+)/i);
+  if (m) return cap(nominalizePluralRu(m[1].trim()));
+
+  // "продажа X" → nominalize X (strip — it's the default retail activity)
+  m = t.match(/^продажа\s+(.+)/i);
+  if (m) return cap(nominalizePluralRu(m[1].trim()));
+
+  // "торговля X" → nominalize X
+  m = t.match(/^торговля\s+(.+)/i);
+  if (m) return cap(nominalizePluralRu(m[1].trim()));
+
+  // "реализация X" → nominalize X
+  m = t.match(/^реализация\s+(.+)/i);
+  if (m) return cap(nominalizePluralRu(m[1].trim()));
+
+  return t;
+}
+
+/** Remove country name mentions from product text so they don't contaminate the extracted product */
+function stripCountryRefsFromText(text: string): string {
+  const countryRe = /\b(?:молдов[аеуы]?|молдовы|росси[яи]|украин[аеу]|казахстан[аеу]?|беларус[ьи]|узбекистан[аеу]?|армени[яи]|грузи[яи]|азербайджан[аеу]?|кыргызстан[аеу]?|таджикистан[аеу]?|туркменистан[аеу]?|германи[яи]|франци[яи]|испани[яи]|польш[аеи]|итали[яи]|швеци[яи]|норвеги[яи]|дании|дания|moldova|russia|ukraine|kazakhstan|belarus|georgia|armenia|germany|france|spain|poland|italy|sweden|norway|denmark)\b/gi;
+  return text.replace(countryRe, "").replace(/\s{2,}/g, " ").trim();
+}
+
+/** Detect broad niche category from raw input */
+export function detectNicheCategory(text: string): NicheCategory | null {
+  const lower = text.toLowerCase();
+  for (const [cat, keywords] of NICHE_KEYWORDS) {
+    if (keywords.some(kw => lower.includes(kw))) return cat;
+  }
+  return null;
+}
+
+/**
+ * Derive a short semantic label for use in headline location templates.
+ * E.g. "Агентство по продаже квартир" → "Квартиры"
+ *      "Стоматологическая клиника"    → "Стоматология"
+ *      "Ремонт холодильников"         → "Холодильники"
+ *      "Доставка суши"                → "Суши"
+ *      "Обучение криптовалюте"        → "Крипта" (safe alias)
+ * Max 16 chars, Title case.
+ */
+function deriveShortProduct(product: string, sensitive: SensitiveCategory | null, niche: NicheCategory | null, rawInput: string): string {
+  const lower = product.toLowerCase();
+  const rawLower = rawInput.toLowerCase();
+
+  // ── Real estate ────────────────────────────────────────────────────────────
+  if (sensitive === "realestate" || /квартир|жильё|жилье|недвижимост|апартамент/.test(rawLower)) {
+    if (/апартамент/.test(rawLower)) return "Апартаменты";
+    if (/студи/.test(rawLower)) return "Студии";
+    if (/дом|домов|коттедж/.test(rawLower)) return "Дома";
+    if (/офис/.test(rawLower)) return "Офисы";
+    if (/аренд/.test(rawLower)) return "Аренда жилья";
+    return "Квартиры";
+  }
+
+  // ── Crypto / blockchain ────────────────────────────────────────────────────
+  if (sensitive === "crypto") {
+    if (/блокчейн|blockchain/.test(rawLower)) return "Блокчейн";
+    if (/web3|defi/.test(rawLower)) return "Web3";
+    return "Крипта";
+  }
+
+  // ── Medical / dental ───────────────────────────────────────────────────────
+  if (sensitive === "medical") {
+    if (/стоматол|dentis/.test(rawLower)) return "Стоматология";
+    if (/хирург|surgeon/.test(rawLower)) return "Хирургия";
+    if (/терапев/.test(rawLower)) return "Терапия";
+    if (/диагнос/.test(rawLower)) return "Диагностика";
+    if (/педиатр/.test(rawLower)) return "Педиатрия";
+    if (/ортопед/.test(rawLower)) return "Ортопедия";
+    return "Клиника";
+  }
+
+  // ── Niche-derived short names ──────────────────────────────────────────────
+  if (niche === "homegoods") {
+    if (/матрас/.test(rawLower)) return "Матрасы";
+    if (/одеял/.test(rawLower)) return "Одеяла";
+    if (/плед/.test(rawLower)) return "Пледы";
+    if (/полотенц/.test(rawLower)) return "Полотенца";
+    if (/шторы|штор/.test(rawLower)) return "Шторы";
+    if (/текстил/.test(rawLower)) return "Текстиль";
+    if (/постел/.test(rawLower)) return "Постельное";
+    return "Подушки";
+  }
+  if (niche === "furniture") {
+    if (/диван/.test(rawLower)) return "Диваны";
+    if (/кровать|кроват/.test(rawLower)) return "Кровати";
+    if (/шкаф/.test(rawLower)) return "Шкафы";
+    if (/стол /.test(rawLower)) return "Столы";
+    if (/кресл/.test(rawLower)) return "Кресла";
+    if (/стеллаж/.test(rawLower)) return "Стеллажи";
+    return "Мебель";
+  }
+  if (niche === "food") {
+    if (/суши|роллы/.test(rawLower)) return "Суши";
+    if (/пицц/.test(rawLower)) return "Пицца";
+    if (/бургер/.test(rawLower)) return "Бургеры";
+    if (/торт/.test(rawLower)) return "Торты";
+    if (/выпечк|кондитер/.test(rawLower)) return "Выпечка";
+    if (/шаурм/.test(rawLower)) return "Шаурма";
+    return "Еда";
+  }
+  if (niche === "clothing") {
+    if (/обув/.test(rawLower)) return "Обувь";
+    if (/куртк/.test(rawLower)) return "Куртки";
+    if (/платье/.test(rawLower)) return "Платья";
+    if (/джинс/.test(rawLower)) return "Джинсы";
+    if (/футболк/.test(rawLower)) return "Футболки";
+    return "Одежда";
+  }
+  if (niche === "electronics") {
+    if (/телефон|смартфон/.test(rawLower)) return "Смартфоны";
+    if (/ноутбук/.test(rawLower)) return "Ноутбуки";
+    if (/планшет/.test(rawLower)) return "Планшеты";
+    if (/наушник/.test(rawLower)) return "Наушники";
+    return "Электроника";
+  }
+  if (niche === "fitness") {
+    if (/йог/.test(rawLower)) return "Йога";
+    if (/бокс/.test(rawLower)) return "Бокс";
+    return "Фитнес";
+  }
+  if (niche === "travel") {
+    if (/путёвк|путевк/.test(rawLower)) return "Путёвки";
+    if (/отель|гостиниц/.test(rawLower)) return "Отели";
+    return "Туры";
+  }
+  if (niche === "automotive") {
+    if (/шиномонтаж/.test(rawLower)) return "Шиномонтаж";
+    if (/кузовн/.test(rawLower)) return "Кузовной ремонт";
+    if (/аренда авто|car rental/.test(rawLower)) return "Аренда авто";
+    if (/подбор авто/.test(rawLower)) return "Подбор авто";
+    return "Автомобили";
+  }
+  if (niche === "beauty") {
+    if (/маникюр/.test(rawLower)) return "Маникюр";
+    if (/парикмахер|барбер/.test(rawLower)) return "Стрижки";
+    if (/косметолог/.test(rawLower)) return "Косметология";
+    return "Красота";
+  }
+
+  // ── Education / courses ────────────────────────────────────────────────────
+  if (/обучени|курс|тренинг/.test(lower)) {
+    const m = lower.match(/^обучени[ею]\s+(.+)$/);
+    if (m) {
+      const subj = cap(m[1].trim());
+      if (subj.length <= 16) return subj;
+      return truncWords(subj, 16);
+    }
+  }
+
+  // ── Delivery ───────────────────────────────────────────────────────────────
+  if (/доставк/.test(lower)) {
+    const core = coreProduct(product);
+    if (core !== product && core.length <= 16) return core;
+  }
+
+  // ── Agency / агентство ────────────────────────────────────────────────────
+  const agencyMatch = lower.match(/агентство\s+(?:по\s+(?:продаже|подбору|аренде|управлению)\s+)?(.+)/);
+  if (agencyMatch) {
+    const noun = cap(agencyMatch[1].trim());
+    if (noun.length <= 16) return noun;
+    return truncWords(noun, 16);
+  }
+
+  // ── Fallback ───────────────────────────────────────────────────────────────
+  const core = coreProduct(product);
+  if (core !== product && core.length <= 16) return core;
+  if (product.length <= 16) return product;
+  return truncWords(product, 16);
+}
+
 /** Strip leading service verb (доставка, аренда, …) to get core product noun */
 function coreProduct(product: string): string {
   const prefixes = [
@@ -447,25 +709,32 @@ export function extractProductOrService(
 ): { short: string; full: string } {
   let text = rawInput;
 
-  // Remove city
+  // 1. Remove city references
   if (city) text = stripCityFromText(text, city);
 
-  // Remove audience
+  // 2. Remove country name mentions (so "бизнес по продаже подушек молдова"
+  //    doesn't end up with "молдова" in the product name)
+  text = stripCountryRefsFromText(text);
+
+  // 3. Remove audience
   if (audience) text = stripAudienceFromText(text, audience);
 
-  // Strip intro phrases
+  // 4. Normalize business intro phrases
+  //    "бизнес по продаже подушек" → "подушки"
+  //    "магазин игрушек" → "игрушки"
+  text = normalizeBusinessPhrase(text);
+
+  // 5. Strip remaining intro/filler phrases
   text = stripIntros(text);
 
-  // Normalize education/course phrases ("курсы по X" → "обучение X")
+  // 6. Normalize education/course phrases ("курсы по X" → "обучение X")
   text = normalizeEducationPhrase(text);
 
-  // Remove punctuation at ends, clean spaces
+  // 7. Clean up
   text = text.replace(/[,.:;!?]+$/, "").replace(/^[,.:;!?\s]+/, "").trim();
 
   if (!text) text = rawInput.trim();
 
-  // Use full 28-char name as the product identifier; fit() in headline
-  // generation will skip templates that exceed the 30-char headline limit.
   const full = truncWords(cap(text), 28);
   return { short: full, full };
 }
@@ -502,10 +771,14 @@ export function parseBusinessInput(
     cityNameEn = countryEntry.nominEn;
   }
 
+  const nicheCategory = detectNicheCategory(niche);
+  const productShort = deriveShortProduct(short, sensitive, nicheCategory, niche);
+
   return {
     rawInput: niche,
     outputLang,
     product: short,
+    productShort,
     productDesc: full,
     cityLocRu,
     cityNameRu,
@@ -516,6 +789,7 @@ export function parseBusinessInput(
     audienceRu: audience?.ruPhrase ?? null,
     audienceEn: audience?.enPhrase ?? null,
     sensitive,
+    niche: nicheCategory,
     isOnline: /онлайн|online|дистанц|remote|удалённо/i.test(lower),
     isCourse: /курс|обучени|тренинг|вебинар|course|training|webinar|класс|class/i.test(lower),
     isDelivery: /доставк|delivery|доставляем/i.test(lower),
@@ -530,14 +804,25 @@ interface HeadlineCandidate {
   tip: string;
 }
 
+/** Add ±2 point jitter to ~40% of candidates for variation between runs */
+function jitter(score: number): number {
+  if (Math.random() < 0.4) {
+    return score + (Math.random() < 0.5 ? 1 : -1) * (Math.random() < 0.5 ? 1 : 2);
+  }
+  return score;
+}
+
 function generateUniversalHeadlines(ctx: BusinessContext): HeadlineCandidate[] {
   const {
-    product, outputLang: lang,
+    product, productShort, outputLang: lang,
     cityLocRu, cityNameRu, cityNameEn,
     countryCode, countryNameRu, countryNameEn,
     audienceRu, audienceEn,
-    sensitive, isOnline, isCourse,
+    sensitive, niche, isOnline, isCourse,
   } = ctx;
+
+  // Short product label for compact location templates (≤16 chars)
+  const ps = productShort;
 
   const aud     = lang === "ru" ? audienceRu   : audienceEn;
   const acc     = lang === "ru" ? accRu(product) : product;
@@ -555,7 +840,7 @@ function generateUniversalHeadlines(ctx: BusinessContext): HeadlineCandidate[] {
 
   const candidates: HeadlineCandidate[] = [];
   const add = (text: string | null, score: number, tip: string) => {
-    if (text && text.length >= 3 && text.length <= 30) candidates.push({ text, score, tip });
+    if (text && text.length >= 3 && text.length <= 30) candidates.push({ text, score: jitter(score), tip });
   };
 
   if (lang === "ru") {
@@ -586,25 +871,26 @@ function generateUniversalHeadlines(ctx: BusinessContext): HeadlineCandidate[] {
 
     // ── Tier 1: Product + city (score 89–95) ──────────────────────────────────
     if (cityLocRu && cityNameRu) {
-      add(fit(`${product} ${cityLocRu}`),             95, "Геолокация + продукт — точное совпадение с поисковым запросом");
-      add(fit(`${product} ${cityNameRu}`),            93, "Продукт + город (именительный) — широкое совпадение без предлога");
-      if (!noАренда) add(fit(`Аренда ${gen} ${cityNameRu}`), 91, "Аренда + генитив + город — формула для техники и оборудования");
-      add(fit(`Услуги ${gen} ${cityNameRu}`),         91, "Услуги + генитив + город — универсальная сервисная формула");
-      add(fit(`Заказать ${acc} ${cityNameRu}`),       89, "Заказать + аккузатив + город — прямой CTA с геолокацией");
+      // Use full product name first; fall back to ps when product+loc exceeds 30 chars
+      add(fit(`${product} ${cityLocRu}`) ?? fit(`${ps} ${cityLocRu}`),             95, "Геолокация + продукт — точное совпадение с поисковым запросом");
+      add(fit(`${product} ${cityNameRu}`) ?? fit(`${ps} ${cityNameRu}`),           93, "Продукт + город (именительный) — широкое совпадение без предлога");
+      if (!noАренда) add(fit(`Аренда ${gen} ${cityNameRu}`),                       91, "Аренда + генитив + город — формула для техники и оборудования");
+      add(fit(`Услуги ${gen} ${cityNameRu}`) ?? fit(`${ps} — услуги ${cityNameRu}`), 91, "Услуги + генитив + город — универсальная сервисная формула");
+      add(fit(`Заказать ${acc} ${cityNameRu}`) ?? fit(`${ps} ${cityNameRu}`),      89, "Заказать + аккузатив + город — прямой CTA с геолокацией");
     } else if (cityLocRu) {
-      add(fit(`${product} ${cityLocRu}`),             95, "Геолокация + продукт — точное совпадение с поисковым запросом");
+      add(fit(`${product} ${cityLocRu}`) ?? fit(`${ps} ${cityLocRu}`),             95, "Геолокация + продукт — точное совпадение с поисковым запросом");
     }
 
     // ── Tier 2: Product + country (score 84–90) ───────────────────────────────
     const countryEntry = countryCode ? COUNTRY_LOC[countryCode] : undefined;
     const cntLocRu = countryEntry?.ru ?? null;
     if (cntLocRu && countryNameRu && countryNameRu !== cityNameRu) {
-      add(fit(`${product} ${cntLocRu}`),              90, "Продукт + страна (локатив) — региональный охват");
-      add(fit(`${product} ${countryNameRu}`),         88, "Продукт + страна (именительный) — широкий охват");
+      add(fit(`${product} ${cntLocRu}`) ?? fit(`${ps} ${cntLocRu}`),              90, "Продукт + страна (локатив) — региональный охват");
+      add(fit(`${product} ${countryNameRu}`) ?? fit(`${ps} ${countryNameRu}`),    88, "Продукт + страна (именительный) — широкий охват");
       if (countryCode.length <= 3) {
-        add(fit(`${product} ${countryCode}`),         86, "Код страны — компактный геосигнал в заголовке");
-        add(fit(`Услуги ${gen} ${countryCode}`),      85, "Услуги + генитив + код страны");
-        if (!noАренда) add(fit(`Аренда ${gen} ${countryCode}`), 84, "Аренда + генитив + код страны");
+        add(fit(`${ps} ${countryCode}`),              86, "Короткий продукт + код страны — компактный геосигнал");
+        add(fit(`Услуги ${gen} ${countryCode}`) ?? fit(`${ps} — ${countryCode}`), 85, "Услуги + генитив + код страны");
+        if (!noАренда) add(fit(`Аренда ${gen} ${countryCode}`),                   84, "Аренда + генитив + код страны");
       }
     }
 
@@ -669,25 +955,275 @@ function generateUniversalHeadlines(ctx: BusinessContext): HeadlineCandidate[] {
       add(fit(`${product}: образовательный курс`),    82, "Образовательный фрейм снижает риск отклонения");
     }
     if (sensitive === "realestate") {
-      add(fit(`${product}: подбор объектов`),         86, "Подбор объектов — мягкий CTA для недвижимости");
-      add(fit(`${product} без посредников`),          84, "Без посредников — сильный дифференциатор");
+      const rCity  = cityNameRu   ?? null;
+      const rCCode = countryCode  ?? null;
+      const rCName = countryNameRu ?? null;
+      // Location combos with short label (always ≤30 chars)
+      if (rCity) {
+        add(fit(`${ps} в ${rCity}`),                 95, "Короткий продукт + город — прямое попадание в гео-запрос");
+        add(fit(`Подбор жилья ${rCity}`),            94, "Подбор жилья + город — сильная сервисная формула");
+        add(fit(`Недвижимость ${rCity}`),            93, "Недвижимость + город — широкий охват по категории");
+        add(fit(`Новостройки ${rCity}`),             92, "Новостройки — популярный сегмент первичного рынка");
+        add(fit(`Купить ${ps.toLowerCase()} ${rCity}`), 91, "Купить + тип жилья + город — транзакционный запрос");
+        add(fit(`Риелтор ${rCity}`),                 90, "Риелтор + город — профессиональный сигнал доверия");
+        add(fit(`Жильё ${rCity}`),                   89, "Жильё + город — широкое информационное совпадение");
+        add(fit(`${ps} рядом с центром`),            87, "Рядом с центром — ключевой локационный фильтр");
+      }
+      if (rCCode && rCCode.length <= 3) {
+        add(fit(`Подбор жилья ${rCCode}`),           93, "Подбор жилья + код страны — компактный геосигнал");
+        add(fit(`${ps} ${rCCode}`),                  91, "Тип жилья + код страны — широкий страновой охват");
+        add(fit(`Недвижимость ${rCCode}`),           90, "Недвижимость + код — национальный охват");
+        add(fit(`Купить ${ps.toLowerCase()} ${rCCode}`), 89, "Купить + тип + код страны — транзакционный запрос");
+        add(fit(`Вторичное жильё ${rCCode}`),        88, "Вторичный рынок — отдельный высоковолюмный сегмент");
+      }
+      if (rCName && rCName !== rCity) {
+        add(fit(`Жильё в ${rCName}`),                88, "Жильё + страна — национальный охват");
+        add(fit(`Недвижимость ${rCName}`),           87, "Недвижимость + страна — широкий страновой охват");
+      }
+      // Universal real estate CTAs
+      add("Агентство недвижимости",                  88, "Прямое название категории — точное совпадение с запросом");
+      add(`${ps} онлайн подбор`,                     87, "Онлайн подбор — снижает барьер для начала поиска");
+      add("Помощь в выборе жилья",                   86, "Помощь — мягкий фрейм без давления");
+      add(`${ps} для семьи`,                         85, "Для семьи — аудиторный сигнал, повышает релевантность");
+      add("Недвижимость под бюджет",                 84, "Под бюджет — снятие ценового возражения");
+      add("Подберите квартиру",                      82, "Императив — прямой CTA с низким барьером");
+      add(`${ps}: подбор объектов`,                  81, "Подбор объектов — мягкий CTA для недвижимости");
+      add(`${ps} без посредников`,                   80, "Без посредников — сильный дифференциатор");
     }
 
-    // ── Tier 9: Product-referenced fillers (still on-topic) ──────────────────
-    add(fit(`${product}: оставьте заявку`),           77, "Продукт + CTA — всегда релевантно");
-    add(fit(`${product}: звоните сейчас`),            76, "Телефонный CTA — высокий CTR для B2C");
-    add(fit(`${product} в наличии`),                  75, "В наличии — сигнал готовности к поставке");
+    // ── Cars / auto specific ──────────────────────────────────────────────────
+    if (/автомобил|машин|авто[^р]|шиномонтаж|кузовн/.test(ctx.rawInput.toLowerCase())) {
+      const aCCity = cityNameRu ?? null;
+      const aCCode = countryCode ?? null;
+      if (aCCity) {
+        add(fit(`${ps} ${aCCity}`),                  94, "Тип авто + город — точное попадание в гео-запрос");
+        add(fit(`Авто сервис ${aCCity}`),            91, "Авто сервис + город — поисковая формула для ремонта");
+        add(fit(`Покупка авто ${aCCity}`),           89, "Покупка авто + город — транзакционный запрос");
+      }
+      if (aCCode && aCCode.length <= 3) {
+        add(fit(`${ps} ${aCCode}`),                  90, "Тип авто + код страны — региональный охват");
+        add(fit(`Подбор авто ${aCCode}`),            88, "Подбор авто + код — сервисная формула");
+      }
+      add("Авто под ваш запрос",                     86, "Персонализация — сильный сигнал для авторынка");
+      add("Проверка авто перед покупкой",            85, "Проверка — снятие риска для покупателя");
+      add(`${ps}: тест-драйв онлайн`,                83, "Тест-драйв — мягкий первый шаг");
+      add("Авто с гарантией пробега",                82, "Гарантия пробега — снятие возражения о техсостоянии");
+      add(`${ps} в наличии`,                         81, "В наличии — сигнал готовности к сделке");
+    }
 
-    // ── Tier 10: Fully generic fillers (max 3 slots, lowest priority) ────────
-    const generics: [string, number, string][] = [
-      ["Оставьте заявку онлайн",        72, "Прямой CTA с низким порогом — высокий CTR"],
-      ["Получите консультацию",         71, "Консультация как первый шаг"],
-      ["Узнайте условия сегодня",       70, "Сигнал срочности без агрессии"],
-      ["Сравните варианты заранее",     69, "Фрейм сравнения — аудитория на стадии выбора"],
-      ["Подберите решение онлайн",      68, "Мягкий призыв без давления"],
-      ["Начните с понятного шага",      67, "Снижает тревогу перед новым продуктом"],
+    // ── Beauty / salon specific ───────────────────────────────────────────────
+    if (/салон красот|парикмахер|маникюр|педикюр|косметолог|барбер/.test(ctx.rawInput.toLowerCase())) {
+      const bCity = cityNameRu ?? null;
+      const bCCode = countryCode ?? null;
+      if (bCity) {
+        add(fit(`${ps} ${bCity}`),                   94, "Услуга красоты + город — точное гео-совпадение");
+        add(fit(`Салон красоты ${bCity}`),           91, "Салон красоты + город — категорийный запрос");
+      }
+      if (bCCode && bCCode.length <= 3) {
+        add(fit(`${ps} ${bCCode}`),                  90, "Услуга + код страны — региональный охват");
+      }
+      add(`${ps} онлайн запись`,                     88, "Онлайн запись — снижает барьер первого контакта");
+      add("Запись к мастеру онлайн",                 87, "Запись к мастеру — прямой CTA для бьюти-услуг");
+      add(`${ps} без очереди`,                       85, "Без очереди — ключевой УТП для салонов");
+      add(`${ps} от профессионала`,                  84, "Профессионал — сигнал экспертизы");
+      add("Акция на первый визит",                   83, "Акция на первый визит — снижает барьер конверсии");
+    }
+
+    // ── Niche: Home goods (подушки, матрасы, текстиль, …) ───────────────────
+    if (niche === "homegoods") {
+      const hCity  = cityNameRu  ?? null;
+      const hCCode = countryCode ?? null;
+      const hCName = countryNameRu ?? null;
+      // Location combos
+      if (hCity) {
+        add(fit(`${ps} в ${hCity}`),               95, "Тип товара + город — точное гео-совпадение");
+        add(fit(`Товары для сна ${hCity}`),        93, "Товары для сна + город — семантическое расширение");
+        add(fit(`Магазин ${ps.toLowerCase()} ${hCity}`), 91, "Магазин + тип + город — категорийный запрос");
+        add(fit(`${ps} с доставкой ${hCity}`),    90, "С доставкой + город — транзакционный сигнал");
+      }
+      if (hCCode && hCCode.length <= 3) {
+        add(fit(`Товары для сна ${hCCode}`),       93, "Семантический кластер + код страны — широкий охват");
+        add(fit(`${ps} с доставкой ${hCCode}`),   91, "С доставкой + код страны — страновой охват");
+        add(fit(`${ps} ${hCCode}`),               90, "Тип товара + код страны — компактный геосигнал");
+        add(fit(`Постельные товары ${hCCode}`),   89, "Постельные товары — широкая категория");
+      }
+      if (hCName && hCName !== hCity) {
+        add(fit(`${ps} ${hCName}`),               92, "Тип товара + страна — страновой охват");
+        add(fit(`Товары для дома ${hCName}`),     90, "Товары для дома + страна — семантическое расширение");
+      }
+      // Semantic / use-case
+      add(`Ортопедические ${ps.toLowerCase()}`,   94, "Ортопедический — ключевой квалификатор для сна");
+      add(`${ps} для комфортного сна`,            93, "Комфортный сон — главный эмоциональный мотив покупки");
+      add(`${ps} для интерьера`,                  90, "Интерьер — второй ключевой сегмент покупателей");
+      add("Товары для дома онлайн",               89, "Онлайн магазин — широкий охват e-commerce запросов");
+      add(`${ps} для всей семьи`,                 88, "Семья — аудиторный сигнал для домашних товаров");
+      add(`${ps} для спальни`,                    87, "Спальня — конкретная локация использования");
+      add("Домашний комфорт онлайн",              86, "Домашний комфорт — эмоциональный бренд-фрейм");
+      add(`Подберите ${ps.toLowerCase()} онлайн`, 85, "Подбор + онлайн — мягкий призыв к действию");
+      add(`${ps} под ваш стиль`,                  84, "Под ваш стиль — персонализация в домашних товарах");
+      add("Уют для вашего дома",                  83, "Уют — ключевое слово категории home comfort");
+      add(`${ps} в наличии`,                      82, "В наличии — сигнал готовности к отгрузке");
+      add("Постельные принадлежности",            81, "Прямое название категории — точное совпадение");
+    }
+
+    // ── Niche: Furniture ──────────────────────────────────────────────────────
+    if (niche === "furniture") {
+      const fCity  = cityNameRu  ?? null;
+      const fCCode = countryCode ?? null;
+      const fCName = countryNameRu ?? null;
+      if (fCity) {
+        add(fit(`${ps} ${fCity}`),                 94, "Тип мебели + город — прямое гео-совпадение");
+        add(fit(`Мебель в ${fCity}`),              92, "Мебель + город — широкий категорийный запрос");
+        add(fit(`${ps} с доставкой ${fCity}`),    90, "С доставкой + город — транзакционный сигнал");
+      }
+      if (fCCode && fCCode.length <= 3) {
+        add(fit(`${ps} ${fCCode}`),               91, "Тип мебели + код страны");
+        add(fit(`Мебель ${fCCode}`),              89, "Мебель + код страны — широкий охват");
+      }
+      if (fCName && fCName !== fCity) {
+        add(fit(`${ps} ${fCName}`),               90, "Тип мебели + страна — страновой охват");
+        add(fit(`Мебель в ${fCName}`),            88, "Мебель + страна — категорийный страновой запрос");
+      }
+      add(`${ps} под заказ`,                      93, "Под заказ — высокий CTR для мебельной ниши");
+      add(`${ps} на любой вкус`,                  89, "Любой вкус — сигнал широкого ассортимента");
+      add("Мебель от производителя",              88, "Производитель — сигнал низкой цены");
+      add(`${ps} с установкой`,                   87, "Установка — снятие барьера сборки");
+      add("Мебель онлайн с доставкой",            86, "Онлайн + доставка — ключевой e-com паттерн");
+      add(`${ps} для вашего дома`,                85, "Для дома — ключевой контекст мебельных покупок");
+      add("Качественная мебель онлайн",           83, "Качество — главное возражение при онлайн-покупке мебели");
+    }
+
+    // ── Niche: Food & delivery ────────────────────────────────────────────────
+    if (niche === "food") {
+      const fdCity  = cityNameRu  ?? null;
+      const fdCCode = countryCode ?? null;
+      if (fdCity) {
+        add(fit(`${ps} в ${fdCity}`),              95, "Еда + город — прямое гео-совпадение");
+        add(fit(`Доставка ${ps.toLowerCase()} ${fdCity}`), 94, "Доставка + еда + город — транзакционный запрос");
+        add(fit(`${ps} с доставкой ${fdCity}`),   93, "С доставкой + город — популярный паттерн поиска");
+        add(fit(`Заказать ${ps.toLowerCase()} ${fdCity}`), 91, "Заказать + еда + город — прямой CTA");
+      }
+      if (fdCCode && fdCCode.length <= 3) {
+        add(fit(`${ps} с доставкой ${fdCCode}`),  91, "С доставкой + код страны — страновой охват");
+        add(fit(`Доставка еды ${fdCCode}`),       89, "Доставка еды + код — широкая категория");
+      }
+      add(`${ps} с доставкой на дом`,             93, "С доставкой на дом — ключевой паттерн food delivery");
+      add(`${ps} — заказ онлайн`,                 91, "Онлайн заказ — основной путь конверсии в food");
+      add("Быстрая доставка еды",                 89, "Быстрая — ключевой дифференциатор в food delivery");
+      add(`Свежие ${ps.toLowerCase()} онлайн`,    87, "Свежие — качественный сигнал для продуктов питания");
+      add("Еда у вас дома за 30 минут",           85, "Конкретное время — повышает доверие");
+      add(`Вкусные ${ps.toLowerCase()} онлайн`,   84, "Вкусные — эмоциональный триггер");
+    }
+
+    // ── Niche: Clothing / fashion ─────────────────────────────────────────────
+    if (niche === "clothing") {
+      const clCity  = cityNameRu  ?? null;
+      const clCCode = countryCode ?? null;
+      const clCName = countryNameRu ?? null;
+      if (clCity) {
+        add(fit(`${ps} ${clCity}`),                94, "Тип одежды + город — гео-запрос");
+        add(fit(`Магазин ${ps.toLowerCase()} ${clCity}`), 91, "Магазин + тип + город — категорийный запрос");
+      }
+      if (clCCode && clCCode.length <= 3) {
+        add(fit(`${ps} ${clCCode}`),               92, "Тип одежды + код страны");
+        add(fit(`Мода и стиль ${clCCode}`),        87, "Мода + код — широкий охват фэшн-категории");
+      }
+      if (clCName && clCName !== clCity) {
+        add(fit(`${ps} ${clCName}`),               90, "Тип одежды + страна");
+      }
+      add(`${ps} онлайн с доставкой`,             93, "Онлайн + доставка — ключевой e-com паттерн");
+      add(`${ps} по выгодным ценам`,              91, "Цена — главный мотив online fashion shopping");
+      add(`${ps} для любого сезона`,              89, "Для любого сезона — широта ассортимента");
+      add(`Стильные ${ps.toLowerCase()}`,         88, "Стильные — ключевой квалификатор фэшн-ниши");
+      add("Большой выбор одежды онлайн",          86, "Большой выбор — снятие возражения ассортимента");
+      add(`${ps} с быстрой доставкой`,            85, "Быстрая доставка — ключевой дифференциатор");
+      add(`${ps} любого размера`,                 84, "Любой размер — инклюзивный сигнал");
+    }
+
+    // ── Niche: Electronics ────────────────────────────────────────────────────
+    if (niche === "electronics") {
+      const elCity  = cityNameRu  ?? null;
+      const elCCode = countryCode ?? null;
+      const elCName = countryNameRu ?? null;
+      if (elCity) {
+        add(fit(`${ps} в ${elCity}`),              94, "Электроника + город — гео-запрос");
+        add(fit(`Купить ${ps.toLowerCase()} ${elCity}`), 92, "Купить + товар + город — транзакционный запрос");
+        add(fit(`${ps} с доставкой ${elCity}`),   90, "С доставкой + город — e-com паттерн");
+      }
+      if (elCCode && elCCode.length <= 3) {
+        add(fit(`${ps} ${elCCode}`),              91, "Электроника + код страны");
+        add(fit(`Купить ${ps.toLowerCase()} ${elCCode}`), 89, "Купить + электроника + код страны");
+      }
+      if (elCName && elCName !== elCity) {
+        add(fit(`${ps} ${elCName}`),              90, "Электроника + страна");
+      }
+      add(`${ps} с гарантией`,                    92, "Гарантия — ключевой фактор при покупке электроники");
+      add(`${ps} по лучшей цене`,                 90, "Цена — главный мотив при выборе электроники");
+      add(`Новые ${ps.toLowerCase()} онлайн`,     89, "Новые + онлайн — свежий ассортимент");
+      add(`${ps} с быстрой доставкой`,            88, "Быстрая доставка — ключевой дифференциатор");
+      add("Выгодная цена на электронику",         86, "Выгодная цена — широкая категория");
+      add(`${ps} в наличии`,                      85, "В наличии — сигнал готовности к отгрузке");
+      add("Техника с официальной гарантией",      84, "Официальная гарантия — снятие главного возражения");
+    }
+
+    // ── Niche: Fitness ────────────────────────────────────────────────────────
+    if (niche === "fitness") {
+      const ftCity  = cityNameRu  ?? null;
+      const ftCCode = countryCode ?? null;
+      if (ftCity) {
+        add(fit(`${ps} ${ftCity}`),                93, "Фитнес + город — гео-запрос");
+        add(fit(`Запись в ${ps.toLowerCase()} ${ftCity}`), 91, "Запись + фитнес + город — прямой CTA");
+      }
+      if (ftCCode && ftCCode.length <= 3) {
+        add(fit(`${ps} ${ftCCode}`),              90, "Фитнес + код страны");
+      }
+      add(`${ps} для начинающих`,                 92, "Для начинающих — самый высоковолюмный сегмент");
+      add(`${ps} онлайн и офлайн`,                89, "Онлайн и офлайн — гибкость формата");
+      add(`Записаться в ${ps.toLowerCase()}`,     88, "CTA с именем продукта — прямое действие");
+      add("Первая тренировка бесплатно",          87, "Бесплатный первый шаг — снятие барьера входа");
+      add(`${ps} с персональным планом`,          85, "Персональный план — дифференциатор");
+      add("Тренируйтесь в своём темпе",           83, "Гибкость — ключевая ценность для начинающих");
+    }
+
+    // ── Niche: Travel ─────────────────────────────────────────────────────────
+    if (niche === "travel") {
+      const tvCity  = cityNameRu  ?? null;
+      const tvCCode = countryCode ?? null;
+      if (tvCity) {
+        add(fit(`${ps} из ${tvCity}`),             94, "Туры из города — прямой гео-запрос");
+        add(fit(`Отдых из ${tvCity}`),             91, "Отдых из города — семантическое расширение");
+      }
+      if (tvCCode && tvCCode.length <= 3) {
+        add(fit(`${ps} из ${tvCCode}`),           92, "Туры + код страны — страновой охват");
+      }
+      add(`${ps} онлайн с подбором`,              91, "Онлайн подбор — ключевой паттерн тревел");
+      add("Горящие путёвки онлайн",               90, "Горящие — высокочастотный запрос в туризме");
+      add(`Найдите ${ps.toLowerCase()} мечты`,    88, "Эмоциональный фрейм — высокий CTR в туризме");
+      add(`${ps} по вашему бюджету`,              87, "По бюджету — снятие ценового возражения");
+      add("Путешествие с нами",                   83, "Мы — мягкий бренд-фрейм");
+    }
+
+    // ── Tier 9: Product-referenced short CTAs ────────────────────────────────
+    add(fit(`${ps}: оставьте заявку`) ?? fit(`${product}: оставьте заявку`), 77, "Продукт + CTA — всегда релевантно");
+    add(fit(`${ps} в наличии`) ?? fit(`${product} в наличии`),               75, "В наличии — сигнал готовности к поставке");
+    add(fit(`Купить ${ps.toLowerCase()} онлайн`),                            74, "Купить + онлайн — транзакционный запрос");
+
+    // ── Tier 10: Fill to 15 with ps-based templates if still short ────────────
+    const fillRu: [string, number, string][] = [
+      [`${ps} — быстрая доставка`,           73, "Быстрая доставка — универсальный дифференциатор"],
+      [`${ps} по доступной цене`,            72, "Доступная цена — снятие ценового барьера"],
+      [`${ps} с гарантией качества`,         71, "Гарантия качества — снятие возражения"],
+      ["Оставьте заявку онлайн",             70, "Прямой CTA с низким порогом"],
+      ["Получите консультацию",              69, "Консультация как первый шаг"],
+      ["Подберите вариант онлайн",           68, "Мягкий призыв без давления"],
+      ["Сравните варианты сегодня",          67, "Фрейм сравнения"],
+      [`${ps} от надёжного продавца`,        66, "Надёжность — сигнал доверия"],
     ];
-    for (const [text, score, tip] of generics) add(text, score, tip);
+    // Only add fillers until we reach 15 unique candidates
+    for (const [text, score, tip] of fillRu) {
+      if (candidates.length >= 20) break; // keep pool to ~20, slice(0,15) later
+      add(fit(text), score, tip);
+    }
 
   } else {
     // ── English ───────────────────────────────────────────────────────────────
@@ -715,66 +1251,119 @@ function generateUniversalHeadlines(ctx: BusinessContext): HeadlineCandidate[] {
 
     // ── Tier 1: Location variants ──
     if (cityNameEn) {
-      add(fit(`${product} in ${cityNameEn}`),         95, "City + product — exact local search match");
-      add(fit(`${product} ${cityNameEn}`),            93, "Product + city (no preposition) — broader local match");
-      add(fit(`${product} Services ${cityNameEn}`),   89, "Service + city — strong local keyword combo");
-      add(fit(`Best ${product} ${cityNameEn}`),       87, "Best + product + city = quality local signal");
+      add(fit(`${product} in ${cityNameEn}`) ?? fit(`${ps} in ${cityNameEn}`),         95, "City + product — exact local search match");
+      add(fit(`${product} ${cityNameEn}`) ?? fit(`${ps} ${cityNameEn}`),               93, "Product + city — broader local match");
+      add(fit(`${ps} Services ${cityNameEn}`),                                          89, "Service + city — strong local keyword combo");
+      add(fit(`Best ${ps} in ${cityNameEn}`),                                          87, "Best + product + city — quality local signal");
     }
     if (countryNameEn && countryNameEn !== cityNameEn) {
-      add(fit(`${product} in ${countryNameEn}`),      88, "Country + product — national reach");
+      add(fit(`${product} in ${countryNameEn}`) ?? fit(`${ps} in ${countryNameEn}`),   88, "Country + product — national reach");
       if (countryCode.length <= 3) {
-        add(fit(`${product} ${countryCode}`),         84, "Product + country code — compact geo signal");
+        add(fit(`${ps} ${countryCode}`),                                               84, "Product + country code — compact geo signal");
       }
     }
 
     // ── Tier 2: Product modifiers ──
-    add(fit(`${product} Online`),                     87, "Online modifier boosts CTR for service businesses");
-    add(fit(`${product} Near You`),                   85, "Near you — triggers local intent algorithms");
-    add(fit(`${product} Today`),                      84, "Today urgency — drives impulse clicks");
-    add(fit(`${product} Specialists`),                83, "Specialists framing = expertise signal");
+    add(fit(`${product} Online`) ?? fit(`${ps} Online`),                               87, "Online modifier boosts CTR for service businesses");
+    add(fit(`${ps} Near You`),                                                         85, "Near you — triggers local intent algorithms");
+    add(fit(`${ps} Today`),                                                            84, "Today urgency — drives impulse clicks");
+    add(fit(`${ps} Specialists`),                                                      83, "Specialists framing = expertise signal");
     if (!noUnsafeModifiers) {
-      add(fit(`${product} With Guarantee`),           82, "Guarantee removes the purchase objection");
+      add(fit(`${ps} With Guarantee`),                                                 82, "Guarantee removes the purchase objection");
     }
-    add(fit(`Trusted ${product}`),                    81, "Trusted = social proof framing");
-    add(fit(`Fast ${product}`),                       80, "Fast = urgency + quality signal");
-    add(fit(`Professional ${product}`),               79, "Professional framing boosts perceived quality");
+    add(fit(`Trusted ${ps}`),                                                          81, "Trusted = social proof framing");
+    add(fit(`Fast ${ps}`),                                                             80, "Fast = urgency + quality signal");
+    add(fit(`Professional ${ps}`),                                                     79, "Professional framing boosts perceived quality");
 
     // ── Tier 3: Action + product ──
-    add(fit(`Book ${product} Online`),                83, "Book CTA is low-friction for service businesses");
-    add(fit(`Get ${product} Quote`),                  82, "Quote CTA — matches high-purchase-intent search");
-    add(fit(`Find ${product} Now`),                   81, "Find + now = local intent + urgency");
-    add(fit(`Compare ${product} Options`),            80, "Comparison frame for consideration-phase buyers");
+    add(fit(`Buy ${ps} Online`),                                                       84, "Buy + Online — transactional keyword combo");
+    add(fit(`Shop ${ps} Online`),                                                      83, "Shop Online — e-commerce CTA");
+    add(fit(`Book ${ps} Online`),                                                      83, "Book CTA is low-friction for service businesses");
+    add(fit(`Get ${ps} Quote`),                                                        82, "Quote CTA — matches high-purchase-intent search");
+    add(fit(`Find ${ps} Now`),                                                         81, "Find + now = local intent + urgency");
+    add(fit(`Compare ${ps} Options`),                                                  80, "Comparison frame for consideration-phase buyers");
 
-    if (aud) {
-      add(fit(`${product} ${aud}`),                   88, "Product + audience — high ad relevance score");
-    }
+    if (aud) add(fit(`${ps} ${aud}`),                                                  88, "Product + audience — high ad relevance score");
 
     if (isCourse) {
-      add(fit(`Enroll: ${product}`),                  90, "Enroll CTA is #1 for online education ads");
-      add(fit(`${product} — Start Today`),            88, "Immediacy in EdTech = strong conversion hook");
+      add(fit(`Enroll: ${product}`) ?? fit(`Enroll: ${ps}`),                          90, "Enroll CTA is #1 for online education ads");
+      add(fit(`${ps} — Start Today`),                                                  88, "Immediacy in EdTech = strong conversion hook");
     }
     if (sensitive === "medical") {
-      add(fit(`Book a Specialist Online`),            88, "Specialist framing is safer than medical promises");
-      add(fit(`${product}: Book Online`),             86, "Direct booking CTA for medical services");
+      add("Book a Specialist Online",                                                   88, "Specialist framing is safer than medical promises");
+      add(fit(`${ps}: Book Online`),                                                   86, "Direct booking CTA for medical services");
     }
     if (sensitive === "legal") {
-      add(fit(`Ask a Legal Question`),                88, "Question framing avoids unauthorized legal advice");
+      add("Ask a Legal Question",                                                       88, "Question framing avoids unauthorized legal advice");
     }
     if (sensitive === "finance" || sensitive === "crypto") {
-      add(fit(`Understand the Risks First`),          85, "Risk mention satisfies Google's financial policy");
-      add(fit(`${product}: Learn the Basics`),        83, "Educational framing reduces moderation risk");
+      add("Understand the Risks First",                                                 85, "Risk mention satisfies Google's financial policy");
+      add(fit(`${ps}: Learn the Basics`),                                              83, "Educational framing reduces moderation risk");
     }
 
-    // ── Generic fillers ──
-    const generics: [string, number, string][] = [
-      ["Get a Free Consultation",        75, "Free consultation reduces conversion friction"],
-      ["Compare Options Before Buying",  74, "Comparison frame for research-phase search intent"],
-      ["Learn More Before You Choose",   73, "Educational tone builds trust before the ask"],
-      ["Request Information Today",      72, "Soft CTA with urgency signal — high CTR for leads"],
-      ["Book a Consultation Online",     71, "Booking CTA — safe and conversion-friendly"],
-      ["Find the Right Option",          70, "Discovery framing for consideration-phase buyers"],
+    // ── EN niche blocks ───────────────────────────────────────────────────────
+    if (niche === "homegoods") {
+      const hEn = cityNameEn ?? countryNameEn ?? null;
+      const hCode = countryCode.length <= 3 ? countryCode : null;
+      if (hEn) add(fit(`${ps} in ${hEn}`),                                             94, "Home goods + location — exact geo match");
+      if (hCode) add(fit(`${ps} ${hCode}`),                                            91, "Product + country code — compact geo signal");
+      add(`Orthopedic ${ps} Online`,                                                    93, "Orthopedic — key qualifier for sleep category");
+      add(`${ps} for Better Sleep`,                                                     92, "Better sleep — primary purchase motivation");
+      add(`${ps} for Your Home`,                                                        90, "For your home — universal home goods frame");
+      add(`Premium ${ps} Online`,                                                       88, "Premium framing — quality signal");
+      add(`${ps} with Fast Delivery`,                                                   87, "Fast delivery — key e-com differentiator");
+      add(`Shop ${ps} Online`,                                                          85, "Shop + category — transactional search match");
+      add("Home Comfort Essentials",                                                    83, "Comfort essentials — semantic cluster keyword");
+    }
+    if (niche === "food") {
+      const fEn = cityNameEn ?? null;
+      if (fEn) add(fit(`${ps} in ${fEn}`),                                             94, "Food + city — exact local search");
+      if (fEn) add(fit(`${ps} Delivery ${fEn}`),                                       92, "Delivery + food + city — transactional");
+      add(`${ps} Home Delivery`,                                                        91, "Home delivery — top food search intent");
+      add(`Order ${ps} Online`,                                                         89, "Order + online — direct CTA");
+      add(`Fresh ${ps} Delivered`,                                                      88, "Fresh + delivered — quality + convenience");
+      add("Fast Food Delivery Online",                                                  85, "Fast delivery — key food delivery signal");
+    }
+    if (niche === "clothing") {
+      const clEn = cityNameEn ?? countryNameEn ?? null;
+      if (clEn) add(fit(`${ps} in ${clEn}`),                                           93, "Clothing + location — geo match");
+      add(`${ps} Online Store`,                                                         91, "Online store — e-com keyword");
+      add(`Stylish ${ps} Online`,                                                       89, "Stylish — key fashion qualifier");
+      add(`${ps} with Free Delivery`,                                                   87, "Free delivery — purchase barrier removal");
+      add(`Shop ${ps} Online`,                                                          86, "Shop + category — transactional");
+      add(`${ps} for Every Season`,                                                     84, "Every season — broad assortment signal");
+    }
+    if (niche === "electronics") {
+      const elEn = cityNameEn ?? countryNameEn ?? null;
+      if (elEn) add(fit(`${ps} in ${elEn}`),                                           93, "Electronics + location — geo match");
+      add(`Buy ${ps} With Warranty`,                                                    92, "Warranty — top purchase concern for electronics");
+      add(`${ps} at Best Price`,                                                        91, "Best price — primary electronics search driver");
+      add(`New ${ps} In Stock`,                                                         89, "In stock — availability signal");
+      add(`Official ${ps} Store`,                                                       88, "Official — authenticity signal");
+    }
+    if (niche === "furniture") {
+      const fuEn = cityNameEn ?? countryNameEn ?? null;
+      if (fuEn) add(fit(`${ps} in ${fuEn}`),                                           93, "Furniture + location — geo match");
+      add(`Custom ${ps} Online`,                                                        91, "Custom — key differentiator for furniture");
+      add(`${ps} with Delivery & Setup`,                                               90, "Setup included — barrier removal");
+      add(`Quality ${ps} Online`,                                                       88, "Quality — main objection for online furniture");
+      add(`${ps} for Every Budget`,                                                     86, "Every budget — affordability signal");
+    }
+
+    // ── EN fill to 15 ─────────────────────────────────────────────────────────
+    const fillEn: [string, number, string][] = [
+      [`${ps} — Best Deals Online`,      75, "Best deals — value proposition"],
+      [`${ps} With Free Shipping`,       74, "Free shipping — removes friction"],
+      ["Get a Free Consultation",        73, "Free consultation reduces friction"],
+      ["Compare Options Before Buying",  72, "Comparison frame for research intent"],
+      ["Request Information Today",      71, "Soft CTA with urgency"],
+      ["Book a Consultation Online",     70, "Booking CTA — safe and conversion-friendly"],
+      ["Find the Right Option",          69, "Discovery framing for consideration phase"],
     ];
-    for (const [text, score, tip] of generics) add(text, score, tip);
+    for (const [text, score, tip] of fillEn) {
+      if (candidates.length >= 20) break;
+      add(fit(text), score, tip);
+    }
   }
 
   // Deduplicate by text and return sorted by score

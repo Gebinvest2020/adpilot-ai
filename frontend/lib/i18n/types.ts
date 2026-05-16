@@ -115,7 +115,8 @@ export interface Translations {
     generatingBtn: string;
     whatYouGet: [string, string, string, string];
     loadingTitle: string;
-    loadingSteps: [string, string, string, string, string, string, string];
+    loadingSubtitle: string;
+    loadingSteps: [string, string, string, string, string, string];
     emptyTitle: string;
     emptySubtitle: string;
     copyAllBtn: string;

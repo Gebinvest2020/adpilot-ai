@@ -482,105 +482,205 @@ function EmptyState() {
   );
 }
 
-// Loading state with step-by-step progress
+// Loading state — premium AI generation flow
 function LoadingState({
   step,
   progress,
   title,
+  subtitle,
   steps,
 }: {
   step: number;
   progress: number;
   title: string;
+  subtitle: string;
   steps: string[];
 }) {
   return (
     <motion.div
       key="loading"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-7"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+      transition={{ duration: 0.3 }}
+      className="rounded-2xl border border-indigo-500/[0.12] bg-white/[0.02] overflow-hidden"
+      style={{ boxShadow: "0 0 60px -12px rgba(99,102,241,0.15)" }}
     >
-      {/* Progress bar */}
-      <div className="mb-7">
-        <div className="flex items-center justify-between mb-2.5">
-          <p className="text-sm font-semibold text-white/55">
-            {title}
-          </p>
-          <span className="text-sm font-bold tabular-nums text-indigo-400">
-            {progress}%
-          </span>
-        </div>
-        <div className="h-1 bg-white/[0.05] rounded-full overflow-hidden">
-          <motion.div
-            className="h-full bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 rounded-full"
-            initial={{ width: "0%" }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.35, ease: "easeOut" }}
-          />
-        </div>
-      </div>
+      {/* Top glow stripe */}
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent" />
 
-      {/* Steps */}
-      <div className="space-y-3 mb-8">
-        {steps.map((s, i) => {
-          const done = i < step;
-          const active = i === step;
-          return (
+      <div className="p-7">
+        {/* AI orb + title */}
+        <div className="flex items-center gap-5 mb-8">
+          {/* Layered pulse orb */}
+          <div className="relative flex-shrink-0">
+            {/* outer pulse ring 1 */}
             <motion.div
-              key={s}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: done ? 0.45 : active ? 1 : 0.2, x: 0 }}
-              transition={{ delay: i * 0.04 }}
-              className="flex items-center gap-3"
+              className="absolute inset-0 rounded-full bg-indigo-500/10"
+              animate={{ scale: [1, 1.55, 1], opacity: [0.6, 0, 0.6] }}
+              transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+              style={{ margin: "-10px" }}
+            />
+            {/* outer pulse ring 2 */}
+            <motion.div
+              className="absolute inset-0 rounded-full bg-violet-500/8"
+              animate={{ scale: [1, 1.35, 1], opacity: [0.5, 0, 0.5] }}
+              transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", delay: 0.7 }}
+              style={{ margin: "-6px" }}
+            />
+            {/* core orb */}
+            <motion.div
+              className="relative w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600 flex items-center justify-center shadow-lg"
+              animate={{ boxShadow: [
+                "0 0 20px 4px rgba(99,102,241,0.35)",
+                "0 0 32px 8px rgba(139,92,246,0.45)",
+                "0 0 20px 4px rgba(99,102,241,0.35)",
+              ]}}
+              transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
             >
-              {/* indicator */}
-              <div
-                className={cn(
-                  "w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all",
-                  done
-                    ? "bg-emerald-500/20"
-                    : active
-                    ? "bg-indigo-500/20"
-                    : "bg-white/[0.04]"
-                )}
-              >
-                {done ? (
-                  <Check className="w-3 h-3 text-emerald-400" />
-                ) : active ? (
-                  <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
-                ) : (
-                  <div className="w-1.5 h-1.5 rounded-full bg-white/15" />
-                )}
-              </div>
-              <span
-                className={cn(
-                  "text-sm transition-all",
-                  done
-                    ? "text-white/35 line-through"
-                    : active
-                    ? "text-white font-medium"
-                    : "text-white/20"
-                )}
-              >
-                {s}
-              </span>
+              {/* rotating arc */}
+              <motion.div
+                className="absolute inset-0 rounded-full border-2 border-transparent"
+                style={{ borderTopColor: "rgba(255,255,255,0.35)", borderRightColor: "rgba(255,255,255,0.1)" }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1.6, repeat: Infinity, ease: "linear" }}
+              />
+              <Zap className="w-5 h-5 text-white" fill="white" />
             </motion.div>
-          );
-        })}
+          </div>
+
+          <div>
+            <motion.p
+              className="text-base font-bold text-white leading-tight"
+              animate={{ opacity: [0.8, 1, 0.8] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            >
+              {title}
+            </motion.p>
+            <p className="text-xs text-indigo-400/70 mt-0.5 font-medium">{subtitle}</p>
+          </div>
+
+          <div className="ml-auto">
+            <span className="text-2xl font-black tabular-nums bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-violet-400">
+              {progress}%
+            </span>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="mb-7">
+          <div className="h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
+            <motion.div
+              className="h-full rounded-full relative overflow-hidden"
+              style={{ background: "linear-gradient(90deg, #6366f1, #8b5cf6, #a855f7)" }}
+              initial={{ width: "0%" }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+            >
+              {/* shimmer sweep */}
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent skew-x-12"
+                animate={{ x: ["-100%", "200%"] }}
+                transition={{ duration: 1.2, repeat: Infinity, ease: "linear", repeatDelay: 0.4 }}
+              />
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Steps */}
+        <div className="space-y-2.5 mb-8">
+          {steps.map((s, i) => {
+            const done    = i < step;
+            const active  = i === step;
+            const pending = i > step;
+            return (
+              <motion.div
+                key={s}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: pending ? 0.22 : 1, x: 0 }}
+                transition={{ delay: i * 0.05, duration: 0.3 }}
+                className="flex items-center gap-3"
+              >
+                {/* indicator */}
+                <div className="relative flex-shrink-0">
+                  {active && (
+                    <motion.div
+                      className="absolute inset-0 rounded-full bg-indigo-500/30"
+                      animate={{ scale: [1, 1.7, 1], opacity: [0.7, 0, 0.7] }}
+                      transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+                      style={{ margin: "-3px" }}
+                    />
+                  )}
+                  <div className={cn(
+                    "w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300",
+                    done    ? "bg-emerald-500/20 border border-emerald-500/30"
+                    : active ? "bg-indigo-500/20 border border-indigo-500/40"
+                    :          "bg-white/[0.04] border border-white/[0.08]"
+                  )}>
+                    {done ? (
+                      <Check className="w-2.5 h-2.5 text-emerald-400" />
+                    ) : active ? (
+                      <motion.div
+                        className="w-1.5 h-1.5 rounded-full bg-indigo-400"
+                        animate={{ scale: [1, 1.3, 1], opacity: [1, 0.6, 1] }}
+                        transition={{ duration: 0.9, repeat: Infinity, ease: "easeInOut" }}
+                      />
+                    ) : (
+                      <div className="w-1 h-1 rounded-full bg-white/20" />
+                    )}
+                  </div>
+                </div>
+
+                <span className={cn(
+                  "text-sm transition-all duration-300 flex-1",
+                  done    ? "text-white/30 line-through decoration-white/15"
+                  : active ? "text-white font-semibold"
+                  :          "text-white/22"
+                )}>
+                  {s}
+                </span>
+
+                {done && (
+                  <motion.span
+                    initial={{ opacity: 0, scale: 0.7 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-[10px] text-emerald-400/60 font-mono flex-shrink-0"
+                  >
+                    done
+                  </motion.span>
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Skeleton rows — shimmer */}
+        <div className="space-y-2.5">
+          {[85, 65, 75, 55, 80].map((w, i) => (
+            <div
+              key={i}
+              className="h-9 rounded-xl overflow-hidden relative"
+              style={{ width: `${w}%`, animationDelay: `${i * 100}ms` }}
+            >
+              <div className="absolute inset-0 bg-white/[0.03] rounded-xl" />
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent"
+                animate={{ x: ["-100%", "200%"] }}
+                transition={{
+                  duration: 1.6,
+                  repeat: Infinity,
+                  ease: "linear",
+                  delay: i * 0.18,
+                  repeatDelay: 0.3,
+                }}
+              />
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Skeleton shimmer */}
-      <div className="space-y-2">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-10 rounded-xl bg-white/[0.03] animate-pulse"
-            style={{ animationDelay: `${i * 80}ms` }}
-          />
-        ))}
-      </div>
+      {/* Bottom glow stripe */}
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-violet-500/20 to-transparent" />
     </motion.div>
   );
 }
@@ -625,11 +725,21 @@ export default function RSAGeneratorPage() {
     setLoadingProgress(0);
     setActiveTab("headlines");
 
-    for (let i = 0; i < r.loadingSteps.length; i++) {
+    // Per-step durations (ms) — heavier steps feel slower
+    const STEP_MS = [420, 380, 340, 600, 420, 360];
+    const total = r.loadingSteps.length;
+
+    for (let i = 0; i < total; i++) {
       setLoadingStep(i);
-      setLoadingProgress(Math.round(((i + 1) / r.loadingSteps.length) * 100));
-      await new Promise((res) => setTimeout(res, 370));
+      // Progress: start of step → end of step, incremental
+      setLoadingProgress(Math.round((i / total) * 92)); // reach 92% by last step
+      await new Promise((res) => setTimeout(res, STEP_MS[i] ?? 370));
     }
+
+    // Snap to 100% briefly, then show results
+    setLoadingStep(total);
+    setLoadingProgress(100);
+    await new Promise((res) => setTimeout(res, 220));
 
     setResults(generateRSA(form.niche, form.country, form.language, form.goal, form.tone));
     setLoading(false);
@@ -888,6 +998,7 @@ export default function RSAGeneratorPage() {
                 step={loadingStep}
                 progress={loadingProgress}
                 title={r.loadingTitle}
+                subtitle={r.loadingSubtitle}
                 steps={r.loadingSteps as string[]}
               />
             )}
@@ -896,8 +1007,9 @@ export default function RSAGeneratorPage() {
             {!loading && results && (
               <motion.div
                 key="results"
-                initial={{ opacity: 0, y: 8 }}
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
                 className="space-y-4"
               >
                 {/* Results toolbar */}
@@ -1012,9 +1124,9 @@ export default function RSAGeneratorPage() {
                         {results.headlines.map((h, i) => (
                           <motion.div
                             key={h.id}
-                            initial={{ opacity: 0, x: -6 }}
+                            initial={{ opacity: 0, x: -8 }}
                             animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: i * 0.03 }}
+                            transition={{ delay: i * 0.035, duration: 0.3 }}
                             className="flex items-center gap-3 px-5 py-3 group hover:bg-white/[0.025] transition-colors"
                           >
                             <span className="text-[11px] font-bold text-white/18 w-6 text-right flex-shrink-0">
