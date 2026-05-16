@@ -146,6 +146,190 @@ export interface Translations {
     severityLabels: { low: string; medium: string; high: string };
   };
 
+  pricing: {
+    badge: string;
+    headline: string;
+    headlineGradient: string;
+    subtitle: string;
+    monthly: string;
+    annual: string;
+    mostPopular: string;
+    perMonth: string;
+    saveYear: string;
+    compareTitle: string;
+    tableFeatureCol: string;
+    faqText: string;
+    faqLink: string;
+    faqOr: string;
+    salesLink: string;
+    unlimited: string;
+    basic: string;
+    advanced: string;
+    callsPerMonth: string;
+    plans: {
+      starter:    { name: string; description: string; cta: string; features: string[] };
+      growth:     { name: string; description: string; cta: string; features: string[] };
+      enterprise: { name: string; description: string; cta: string; features: string[] };
+    };
+    table: {
+      adsPerMonth: string;
+      rsaGenerator: string;
+      moderationChecker: string;
+      ctrAnalyzer: string;
+      keywordIntelligence: string;
+      abTesting: string;
+      apiAccess: string;
+      userSeats: string;
+      whiteLabelExports: string;
+      customAiFineTuning: string;
+      dedicatedSupport: string;
+      ssoManagement: string;
+    };
+  };
+
+  faq: {
+    badge: string;
+    headline: string;
+    headlineGradient: string;
+    subtitle: string;
+    allCategory: string;
+    categories: { general: string; billing: string; technical: string; account: string };
+    noResults: string;
+    contactTitle: string;
+    contactSubtitle: string;
+    contactBtn: string;
+  };
+
+  moderation: {
+    pageTitle: string;
+    pageSubtitle: string;
+    headlinesLabel: string;
+    descriptionsLabel: string;
+    addBtn: string;
+    industryLabel: string;
+    industryPlaceholder: string;
+    industries: string[];
+    checkBtn: string;
+    checkingBtn: string;
+    emptyMsg: string;
+    riskLow: string;
+    riskMedium: string;
+    riskHigh: string;
+    complianceTitle: string;
+    issuesFoundDesc: string;
+    issuesLabel: string;
+    compliantLabel: string;
+    fixBtn: string;
+    highLabel: string;
+    mediumLabel: string;
+    lowLabel: string;
+  };
+
+  ctr: {
+    pageTitle: string;
+    pageSubtitle: string;
+    inputTitle: string;
+    adCopyLabel: string;
+    adCopyPlaceholder: string;
+    keywordsLabel: string;
+    keywordsPlaceholder: string;
+    industryLabel: string;
+    industryPlaceholder: string;
+    industries: string[];
+    competitorTitle: string;
+    competitorDesc: string;
+    analyzeBtn: string;
+    analyzingBtn: string;
+    emptyMsg: string;
+    overallScoreLabel: string;
+    breakdownLabel: string;
+    recommendationsLabel: string;
+    improveBtn: string;
+    hideBtn: string;
+    improvedVersionLabel: string;
+    scoreExcellent: string;
+    scoreAverage: string;
+    scoreNeedsWork: string;
+  };
+
+  support: {
+    badge: string;
+    headline: string;
+    headlineGradient: string;
+    subtitle: string;
+    formTitle: string;
+    nameLabel: string;
+    namePlaceholder: string;
+    emailLabel: string;
+    emailPlaceholder: string;
+    subjectLabel: string;
+    subjectOptions: [string, string, string, string];
+    messageLabel: string;
+    messagePlaceholder: string;
+    sendBtn: string;
+    sendingBtn: string;
+    successTitle: string;
+    successMsg: string;
+    statusTitle: string;
+    statusAllOperational: string;
+    serviceNames: [string, string, string, string];
+    resourcesTitle: string;
+    resources: [
+      { title: string; desc: string; href: string },
+      { title: string; desc: string; href: string },
+      { title: string; desc: string; href: string },
+    ];
+  };
+
+  login: {
+    headline: string;
+    subtitle: string;
+    leftHeadline: string;
+    leftHeadlineGradient: string;
+    leftSubtitle: string;
+    stats: [
+      { value: string; label: string },
+      { value: string; label: string },
+      { value: string; label: string },
+    ];
+    testimonialQuote: string;
+    testimonialName: string;
+    testimonialRole: string;
+    emailLabel: string;
+    emailPlaceholder: string;
+    passwordLabel: string;
+    passwordPlaceholder: string;
+    rememberMe: string;
+    forgotPassword: string;
+    signInBtn: string;
+    orDivider: string;
+    noAccount: string;
+    signUpFree: string;
+  };
+
+  register: {
+    headline: string;
+    subtitle: string;
+    leftHeadline: string;
+    leftHeadlineGradient: string;
+    leftSubtitle: string;
+    perks: [string, string, string, string];
+    nameLabel: string;
+    namePlaceholder: string;
+    emailLabel: string;
+    emailPlaceholder: string;
+    passwordLabel: string;
+    passwordPlaceholder: string;
+    createBtn: string;
+    orDivider: string;
+    legalText: string;
+    legalTerms: string;
+    legalAnd: string;
+    legalPrivacy: string;
+    haveAccount: string;
+    signIn: string;
+  };
+
   footer: {
     brandDesc: string;
     copyright: string;

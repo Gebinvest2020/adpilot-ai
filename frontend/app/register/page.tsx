@@ -5,19 +5,15 @@ import { useState } from "react";
 import Link from "next/link";
 import { Zap, Mail, Lock, User, Eye, EyeOff, ArrowRight, Globe, GitBranch, Check } from "lucide-react";
 import AnimatedBackground from "@/components/shared/AnimatedBackground";
-
-const perks = [
-  "14-day free trial, no credit card needed",
-  "Generate 15-headline RSA ads in seconds",
-  "Pre-screen ads for Google policy violations",
-  "Join 10,000+ performance marketers",
-];
+import { useT } from "@/lib/i18n";
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const t = useT();
+  const r = t.register;
 
   return (
     <div className="min-h-screen flex" style={{ background: '#050508' }}>
@@ -49,19 +45,17 @@ export default function RegisterPage() {
         <div className="relative z-10 space-y-8">
           <div>
             <h2 className="text-4xl font-black text-white mb-4 leading-tight">
-              Everything you need to
+              {r.leftHeadline}
               <br />
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-violet-400">
-                win at Google Ads.
+                {r.leftHeadlineGradient}
               </span>
             </h2>
-            <p className="text-white/40 text-base leading-relaxed">
-              Start for free. No credit card required. Upgrade whenever you&apos;re ready to scale.
-            </p>
+            <p className="text-white/40 text-base leading-relaxed">{r.leftSubtitle}</p>
           </div>
 
           <ul className="space-y-4">
-            {perks.map((perk) => (
+            {r.perks.map((perk) => (
               <li key={perk} className="flex items-center gap-3">
                 <div className="w-6 h-6 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center flex-shrink-0">
                   <Check className="w-3 h-3 text-indigo-400" />
@@ -118,8 +112,8 @@ export default function RegisterPage() {
           </div>
 
           <div className="mb-8">
-            <h1 className="text-3xl font-black text-white mb-2">Create your account</h1>
-            <p className="text-white/40">Start your 14-day free trial today</p>
+            <h1 className="text-3xl font-black text-white mb-2">{r.headline}</h1>
+            <p className="text-white/40">{r.subtitle}</p>
           </div>
 
           {/* Social signup */}
@@ -138,48 +132,48 @@ export default function RegisterPage() {
 
           <div className="relative flex items-center gap-4 mb-6">
             <div className="flex-1 h-px bg-white/[0.07]" />
-            <span className="text-xs text-white/25 font-medium uppercase tracking-wider">or</span>
+            <span className="text-xs text-white/25 font-medium uppercase tracking-wider">{r.orDivider}</span>
             <div className="flex-1 h-px bg-white/[0.07]" />
           </div>
 
           <form className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-white/60 mb-1.5">Full name</label>
+              <label className="block text-sm font-medium text-white/60 mb-1.5">{r.nameLabel}</label>
               <div className="relative">
                 <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Alex Johnson"
+                  placeholder={r.namePlaceholder}
                   className="w-full pl-10 pr-4 py-3 rounded-xl border border-white/[0.1] bg-white/[0.04] text-white placeholder-white/25 text-sm focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white/60 mb-1.5">Email address</label>
+              <label className="block text-sm font-medium text-white/60 mb-1.5">{r.emailLabel}</label>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@company.com"
+                  placeholder={r.emailPlaceholder}
                   className="w-full pl-10 pr-4 py-3 rounded-xl border border-white/[0.1] bg-white/[0.04] text-white placeholder-white/25 text-sm focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white/60 mb-1.5">Password</label>
+              <label className="block text-sm font-medium text-white/60 mb-1.5">{r.passwordLabel}</label>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="At least 8 characters"
+                  placeholder={r.passwordPlaceholder}
                   className="w-full pl-10 pr-12 py-3 rounded-xl border border-white/[0.1] bg-white/[0.04] text-white placeholder-white/25 text-sm focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all"
                 />
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
@@ -194,21 +188,21 @@ export default function RegisterPage() {
               type="submit"
               className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 transition-all mt-2"
             >
-              Create Account — Free
+              {r.createBtn}
               <ArrowRight className="w-4 h-4" />
             </motion.button>
           </form>
 
           <p className="text-center text-xs text-white/25 mt-4">
-            By signing up, you agree to our{" "}
-            <a href="#" className="text-white/40 hover:text-white/60 underline underline-offset-2">Terms</a>
-            {" "}and{" "}
-            <a href="#" className="text-white/40 hover:text-white/60 underline underline-offset-2">Privacy Policy</a>
+            {r.legalText}{" "}
+            <a href="#" className="text-white/40 hover:text-white/60 underline underline-offset-2">{r.legalTerms}</a>
+            {" "}{r.legalAnd}{" "}
+            <a href="#" className="text-white/40 hover:text-white/60 underline underline-offset-2">{r.legalPrivacy}</a>
           </p>
 
           <p className="text-center text-sm text-white/40 mt-5">
-            Already have an account?{" "}
-            <Link href="/login" className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">Sign in</Link>
+            {r.haveAccount}{" "}
+            <Link href="/login" className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">{r.signIn}</Link>
           </p>
         </motion.div>
       </div>

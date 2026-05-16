@@ -5,11 +5,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { Zap, Mail, Lock, Eye, EyeOff, ArrowRight, Globe, GitBranch } from "lucide-react";
 import AnimatedBackground from "@/components/shared/AnimatedBackground";
+import { useT } from "@/lib/i18n";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const t = useT();
+  const l = t.login;
 
   return (
     <div className="min-h-screen flex" style={{ background: '#050508' }}>
@@ -43,24 +46,18 @@ export default function LoginPage() {
         <div className="relative z-10 space-y-8">
           <div>
             <h2 className="text-4xl font-black text-white mb-4 leading-tight">
-              Write better ads.
+              {l.leftHeadline}
               <br />
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-violet-400">
-                Convert more clicks.
+                {l.leftHeadlineGradient}
               </span>
             </h2>
-            <p className="text-white/40 text-base leading-relaxed">
-              Join 10,000+ marketers who trust AdPilot AI to generate high-CTR Google Ads, avoid moderation bans, and scale their campaigns.
-            </p>
+            <p className="text-white/40 text-base leading-relaxed">{l.leftSubtitle}</p>
           </div>
 
           {/* Mini stats */}
           <div className="grid grid-cols-3 gap-4">
-            {[
-              { value: "340%", label: "Avg CTR boost" },
-              { value: "98.2%", label: "Approval rate" },
-              { value: "10K+", label: "Ads generated" },
-            ].map((s) => (
+            {l.stats.map((s) => (
               <div key={s.label} className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4 text-center">
                 <p className="text-2xl font-black text-white">{s.value}</p>
                 <p className="text-xs text-white/40 mt-0.5">{s.label}</p>
@@ -71,13 +68,15 @@ export default function LoginPage() {
           {/* Testimonial */}
           <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-5">
             <p className="text-sm text-white/60 leading-relaxed italic mb-4">
-              &ldquo;AdPilot AI is the secret weapon behind our 340% CTR improvement. I can&apos;t imagine running Google Ads without it now.&rdquo;
+              &ldquo;{l.testimonialQuote}&rdquo;
             </p>
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-xs font-bold text-white">SC</div>
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-xs font-bold text-white">
+                {l.testimonialName.split(" ").map((w) => w[0]).join("").slice(0, 2)}
+              </div>
               <div>
-                <p className="text-xs font-semibold text-white">Sarah Chen</p>
-                <p className="text-xs text-white/40">Head of Marketing, TechFlow</p>
+                <p className="text-xs font-semibold text-white">{l.testimonialName}</p>
+                <p className="text-xs text-white/40">{l.testimonialRole}</p>
               </div>
             </div>
           </div>
@@ -103,8 +102,8 @@ export default function LoginPage() {
           </div>
 
           <div className="mb-8">
-            <h1 className="text-3xl font-black text-white mb-2">Welcome back</h1>
-            <p className="text-white/40">Sign in to your AdPilot AI account</p>
+            <h1 className="text-3xl font-black text-white mb-2">{l.headline}</h1>
+            <p className="text-white/40">{l.subtitle}</p>
           </div>
 
           {/* Social login */}
@@ -127,35 +126,35 @@ export default function LoginPage() {
 
           <div className="relative flex items-center gap-4 mb-6">
             <div className="flex-1 h-px bg-white/[0.07]" />
-            <span className="text-xs text-white/25 font-medium uppercase tracking-wider">or</span>
+            <span className="text-xs text-white/25 font-medium uppercase tracking-wider">{l.orDivider}</span>
             <div className="flex-1 h-px bg-white/[0.07]" />
           </div>
 
           {/* Form */}
           <form className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-white/60 mb-1.5">Email address</label>
+              <label className="block text-sm font-medium text-white/60 mb-1.5">{l.emailLabel}</label>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@company.com"
+                  placeholder={l.emailPlaceholder}
                   className="w-full pl-10 pr-4 py-3 rounded-xl border border-white/[0.1] bg-white/[0.04] text-white placeholder-white/25 text-sm focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.06] focus:ring-1 focus:ring-indigo-500/30 transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white/60 mb-1.5">Password</label>
+              <label className="block text-sm font-medium text-white/60 mb-1.5">{l.passwordLabel}</label>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
+                  placeholder={l.passwordPlaceholder}
                   className="w-full pl-10 pr-12 py-3 rounded-xl border border-white/[0.1] bg-white/[0.04] text-white placeholder-white/25 text-sm focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.06] focus:ring-1 focus:ring-indigo-500/30 transition-all"
                 />
                 <button
@@ -171,9 +170,9 @@ export default function LoginPage() {
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" className="w-3.5 h-3.5 rounded border-white/20 bg-white/[0.04] accent-indigo-600" />
-                <span className="text-xs text-white/40">Remember me</span>
+                <span className="text-xs text-white/40">{l.rememberMe}</span>
               </label>
-              <a href="#" className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors">Forgot password?</a>
+              <a href="#" className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors">{l.forgotPassword}</a>
             </div>
 
             <motion.button
@@ -182,15 +181,15 @@ export default function LoginPage() {
               type="submit"
               className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 transition-all mt-2"
             >
-              Sign In
+              {l.signInBtn}
               <ArrowRight className="w-4 h-4" />
             </motion.button>
           </form>
 
           <p className="text-center text-sm text-white/40 mt-6">
-            Don&apos;t have an account?{" "}
+            {l.noAccount}{" "}
             <Link href="/register" className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
-              Sign up free
+              {l.signUpFree}
             </Link>
           </p>
         </motion.div>

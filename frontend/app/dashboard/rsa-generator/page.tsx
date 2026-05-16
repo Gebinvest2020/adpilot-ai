@@ -9,7 +9,8 @@ import {
   RotateCcw, Shield, Info, Megaphone, TrendingUp, Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { rsaFullResults, rsaFullResultsRu, type RSAFullResult, type RSAHeadline, type RSADescription } from "@/lib/mock-data";
+import type { RSAFullResult, RSAHeadline, RSADescription } from "@/lib/mock-data";
+import { generateRSA } from "@/lib/fake-ai/rsa-generator";
 import { useT, interp } from "@/lib/i18n";
 
 // ─── Options ────────────────────────────────────────────────────────────────
@@ -190,9 +191,9 @@ function CountrySelect({
     : options;
 
   const groups: { key: "cis" | "popular" | "other"; items: CountryEntry[] }[] = [
-    { key: "cis",     items: filtered.filter((o) => o.group === "cis")     },
-    { key: "popular", items: filtered.filter((o) => o.group === "popular") },
-    { key: "other",   items: filtered.filter((o) => o.group === "other")   },
+    { key: "cis" as const,     items: filtered.filter((o) => o.group === "cis")     },
+    { key: "popular" as const, items: filtered.filter((o) => o.group === "popular") },
+    { key: "other" as const,   items: filtered.filter((o) => o.group === "other")   },
   ].filter((g) => g.items.length > 0);
 
   const dropdown = (
@@ -606,10 +607,7 @@ export default function RSAGeneratorPage() {
       await new Promise((res) => setTimeout(res, 370));
     }
 
-    // Language of the ad copy is driven by the form's language field,
-    // not the UI locale. Russian UI + English ads → English mock, and vice versa.
-    const useRussian = form.language === "Russian";
-    setResults(useRussian ? rsaFullResultsRu : rsaFullResults);
+    setResults(generateRSA(form.niche, form.country, form.language, form.goal, form.tone));
     setLoading(false);
   };
 

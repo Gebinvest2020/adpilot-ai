@@ -7,18 +7,19 @@ import {
 } from "lucide-react";
 import { ctrAnalysisResults } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
-const industries = [
-  "Technology & SaaS", "E-commerce & Retail", "Finance & Insurance",
-  "Healthcare", "Legal Services", "Real Estate", "Education", "Other",
-];
-
-function ScoreGauge({ score }: { score: number }) {
+function ScoreGauge({ score, labelExcellent, labelAverage, labelNeedsWork }: {
+  score: number;
+  labelExcellent: string;
+  labelAverage: string;
+  labelNeedsWork: string;
+}) {
   const radius = 70;
   const circumference = Math.PI * radius;
   const dashOffset = circumference - (score / 100) * circumference;
   const color = score >= 80 ? "#10b981" : score >= 60 ? "#f59e0b" : "#ef4444";
-  const label = score >= 80 ? "Excellent" : score >= 60 ? "Average" : "Needs Work";
+  const label = score >= 80 ? labelExcellent : score >= 60 ? labelAverage : labelNeedsWork;
 
   return (
     <div className="flex flex-col items-center">
@@ -99,6 +100,9 @@ function ScoreBar({ name, score, status, index }: { name: string; score: number;
 }
 
 export default function CTRAnalyzerPage() {
+  const t = useT();
+  const c = t.ctr;
+
   const [adText, setAdText] = useState("");
   const [keywords, setKeywords] = useState("");
   const [industry, setIndustry] = useState("");
@@ -123,9 +127,9 @@ export default function CTRAnalyzerPage() {
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
             <BarChart2 className="w-4 h-4 text-white" />
           </div>
-          <h1 className="text-2xl font-black text-white">CTR Analyzer</h1>
+          <h1 className="text-2xl font-black text-white">{c.pageTitle}</h1>
         </div>
-        <p className="text-sm text-white/40 ml-12">Get AI-powered CTR scores and actionable improvement suggestions</p>
+        <p className="text-sm text-white/40 ml-12">{c.pageSubtitle}</p>
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -136,39 +140,39 @@ export default function CTRAnalyzerPage() {
           transition={{ delay: 0.1 }}
           className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-6 space-y-5 h-fit"
         >
-          <h2 className="text-sm font-bold text-white/60 uppercase tracking-widest">Ad Copy to Analyze</h2>
+          <h2 className="text-sm font-bold text-white/60 uppercase tracking-widest">{c.inputTitle}</h2>
 
           <div>
-            <label className="block text-sm font-medium text-white/50 mb-1.5">Paste Your Ad Copy</label>
+            <label className="block text-sm font-medium text-white/50 mb-1.5">{c.adCopyLabel}</label>
             <textarea
               value={adText}
               onChange={(e) => setAdText(e.target.value)}
-              placeholder={`Headline 1: Generate High-CTR Google Ads\nHeadline 2: AI-Powered Ad Copy Tool\nHeadline 3: Start Free Trial Today\n\nDescription 1: Write Google Ads that convert with AI...`}
+              placeholder={c.adCopyPlaceholder}
               rows={8}
               className="w-full px-3.5 py-3 rounded-xl border border-white/[0.08] bg-white/[0.04] text-white placeholder-white/20 text-sm focus:outline-none focus:border-blue-500/40 focus:ring-1 focus:ring-blue-500/20 transition-all resize-none font-mono"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white/50 mb-1.5">Target Keywords</label>
+            <label className="block text-sm font-medium text-white/50 mb-1.5">{c.keywordsLabel}</label>
             <input
               value={keywords}
               onChange={(e) => setKeywords(e.target.value)}
-              placeholder="Google Ads tool, AI ad generator, CTR optimizer..."
+              placeholder={c.keywordsPlaceholder}
               className="w-full px-3.5 py-2.5 rounded-xl border border-white/[0.08] bg-white/[0.04] text-white placeholder-white/20 text-sm focus:outline-none focus:border-blue-500/40 focus:ring-1 focus:ring-blue-500/20 transition-all"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white/50 mb-1.5">Industry / Niche</label>
+            <label className="block text-sm font-medium text-white/50 mb-1.5">{c.industryLabel}</label>
             <div className="relative">
               <select
                 value={industry}
                 onChange={(e) => setIndustry(e.target.value)}
                 className="w-full appearance-none px-3.5 py-2.5 pr-8 rounded-xl border border-white/[0.08] bg-white/[0.04] text-white text-sm focus:outline-none focus:border-blue-500/40 transition-all cursor-pointer"
               >
-                <option value="" className="bg-[#111118]">Select industry...</option>
-                {industries.map((ind) => (
+                <option value="" className="bg-[#111118]">{c.industryPlaceholder}</option>
+                {c.industries.map((ind) => (
                   <option key={ind} value={ind} className="bg-[#111118]">{ind}</option>
                 ))}
               </select>
@@ -178,8 +182,8 @@ export default function CTRAnalyzerPage() {
 
           <div className="flex items-center justify-between p-3.5 rounded-xl border border-white/[0.07] bg-white/[0.02]">
             <div>
-              <p className="text-sm font-medium text-white/60">Competitor Analysis</p>
-              <p className="text-xs text-white/30 mt-0.5">Compare against top ads in your niche</p>
+              <p className="text-sm font-medium text-white/60">{c.competitorTitle}</p>
+              <p className="text-xs text-white/30 mt-0.5">{c.competitorDesc}</p>
             </div>
             <button className="w-10 h-6 rounded-full bg-indigo-600/30 border border-indigo-500/40 relative transition-all hover:bg-indigo-600/50">
               <span className="absolute left-1 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-indigo-400 transition-all" />
@@ -193,9 +197,9 @@ export default function CTRAnalyzerPage() {
             className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-500/15 disabled:opacity-60 transition-all"
           >
             {loading ? (
-              <><Loader2 className="w-4 h-4 animate-spin" />Analyzing CTR...</>
+              <><Loader2 className="w-4 h-4 animate-spin" />{c.analyzingBtn}</>
             ) : (
-              <><BarChart2 className="w-4 h-4" />Analyze CTR</>
+              <><BarChart2 className="w-4 h-4" />{c.analyzeBtn}</>
             )}
           </motion.button>
         </motion.div>
@@ -221,7 +225,7 @@ export default function CTRAnalyzerPage() {
               <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                 className="rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.01] p-16 text-center">
                 <BarChart2 className="w-10 h-10 text-white/10 mx-auto mb-4" />
-                <p className="text-white/30 text-sm font-medium">Paste your ad copy and click analyze</p>
+                <p className="text-white/30 text-sm font-medium">{c.emptyMsg}</p>
               </motion.div>
             )}
 
@@ -229,13 +233,18 @@ export default function CTRAnalyzerPage() {
               <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                 {/* Overall score */}
                 <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-6 text-center">
-                  <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-4">Overall CTR Score</p>
-                  <ScoreGauge score={results.overallScore} />
+                  <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-4">{c.overallScoreLabel}</p>
+                  <ScoreGauge
+                    score={results.overallScore}
+                    labelExcellent={c.scoreExcellent}
+                    labelAverage={c.scoreAverage}
+                    labelNeedsWork={c.scoreNeedsWork}
+                  />
                 </div>
 
                 {/* Breakdown */}
                 <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5 space-y-4">
-                  <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">Score Breakdown</p>
+                  <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">{c.breakdownLabel}</p>
                   {results.breakdown.map((item, i) => (
                     <ScoreBar
                       key={item.name}
@@ -249,7 +258,7 @@ export default function CTRAnalyzerPage() {
 
                 {/* Recommendations */}
                 <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5 space-y-3">
-                  <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">AI Recommendations</p>
+                  <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">{c.recommendationsLabel}</p>
                   <ul className="space-y-3">
                     {results.recommendations.map((rec, i) => (
                       <motion.li
@@ -273,7 +282,7 @@ export default function CTRAnalyzerPage() {
                   className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600/30 to-violet-600/30 border border-indigo-500/30 hover:border-indigo-500/50 text-indigo-300 font-bold text-sm flex items-center justify-center gap-2 transition-all"
                 >
                   <Wand2 className="w-4 h-4" />
-                  {showImproved ? "Hide" : "Improve with AI"}
+                  {showImproved ? c.hideBtn : c.improveBtn}
                 </motion.button>
 
                 {/* Improved version */}
@@ -287,7 +296,7 @@ export default function CTRAnalyzerPage() {
                     >
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-indigo-400" />
-                        <p className="text-xs font-bold text-indigo-300 uppercase tracking-wider">AI-Improved Version</p>
+                        <p className="text-xs font-bold text-indigo-300 uppercase tracking-wider">{c.improvedVersionLabel}</p>
                         <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full ml-auto">+28% CTR</span>
                       </div>
                       <div className="space-y-2">
@@ -315,9 +324,6 @@ export default function CTRAnalyzerPage() {
                           </div>
                         ))}
                       </div>
-                      <p className="text-xs text-indigo-300/60 font-medium text-center">
-                        Estimated CTR improvement: <span className="text-emerald-400 font-bold">+28%</span>
-                      </p>
                     </motion.div>
                   )}
                 </AnimatePresence>

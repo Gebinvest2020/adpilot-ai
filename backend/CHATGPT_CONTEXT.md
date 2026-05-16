@@ -1,47 +1,63 @@
-# ChatGPT Context — AdPilot AI
+# AdPilot AI — Project Context
 
-User:
-- Russian-speaking
-- beginner in coding
-- building first AI SaaS startup
-- interested in Google Ads, AI tools, SaaS, crypto
+## Project
+AI SaaS platform for Google Ads marketers.
 
-Project:
-AdPilot AI
+Style:
+- premium dark fintech SaaS
+- Apple/Linear/Revolut inspired
+- cinematic gradients
+- glassmorphism
+- modern animations
+- real startup feeling
 
-Vision:
-Premium AI SaaS platform for Google Ads marketers.
+## Stack
+Frontend:
+- Next.js
+- TypeScript
+- Tailwind
+- Framer Motion
 
-Main Features:
+Backend:
+- FastAPI (planned)
+- OpenAI API (planned)
+- Supabase (planned)
+
+## Current Features
+- Landing page
+- Dashboard
 - RSA Generator
 - Moderation Checker
 - CTR Analyzer
-- AI-powered optimization
+- Pricing page
+- Localization system (RU/EN)
 
-Tech Stack:
-- Next.js
-- Tailwind
-- TypeScript
-- FastAPI
-- Supabase (planned)
-- OpenAI API (planned)
+## Current Goals
+- finish full Russian localization
+- add CIS countries
+- create legal pages
+- create documentation pages
+- make footer links clickable
+- replace GPT-4 mentions with GPT-5
+- make app production-level
 
-Current Status:
-- frontend working
-- backend scaffold created
-- dashboard created
-- multilingual RU/EN support in progress
-- RSA Generator MVP in progress
+## Future Plans
+- OpenAI integration
+- real RSA generation
+- auth system
+- subscriptions
+- Stripe
+- Supabase database
+- export system
+- deployment
 
-Design:
-- dark premium fintech UI
-- glassmorphism
-- purple/cyan gradients
-- Apple/Linear/Revolut style
+## Important Notes
+- Russian text must sound natural for CIS marketers
+- avoid robotic translations
+- maintain premium SaaS quality
+- dark luxury UI
+- smooth UX animations
 
-Important:
-- user is beginner in programming
-- explanations should be simple
-- step-by-step guidance
-- focus on building real startup
-- focus on premium UX and SaaS architecture
+## GitHub
+Repository:
+https://github.com/Gebinvest2020/adpilot-ai

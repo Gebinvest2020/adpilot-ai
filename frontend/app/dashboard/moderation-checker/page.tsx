@@ -7,24 +7,24 @@ import {
 } from "lucide-react";
 import { moderationResults } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
-
-const industries = [
-  "Technology & SaaS", "E-commerce & Retail", "Finance & Insurance",
-  "Healthcare & Medical", "Legal Services", "Real Estate", "Education",
-  "Travel & Hospitality", "Automotive", "Other",
-];
+import { useT, interp } from "@/lib/i18n";
 
 const severityConfig = {
-  high: { color: "text-red-400 bg-red-500/10 border-red-500/20", icon: AlertCircle },
+  high:   { color: "text-red-400 bg-red-500/10 border-red-500/20",     icon: AlertCircle },
   medium: { color: "text-amber-400 bg-amber-500/10 border-amber-500/20", icon: AlertTriangle },
-  low: { color: "text-blue-400 bg-blue-500/10 border-blue-500/20", icon: AlertCircle },
+  low:    { color: "text-blue-400 bg-blue-500/10 border-blue-500/20",   icon: AlertCircle },
 };
 
-function RiskRing({ score }: { score: number }) {
+function RiskRing({ score, labelLow, labelMedium, labelHigh }: {
+  score: number;
+  labelLow: string;
+  labelMedium: string;
+  labelHigh: string;
+}) {
   const radius = 52;
   const circumference = 2 * Math.PI * radius;
   const riskColor = score >= 70 ? "#ef4444" : score >= 40 ? "#f59e0b" : "#10b981";
-  const riskLabel = score >= 70 ? "HIGH RISK" : score >= 40 ? "MEDIUM RISK" : "LOW RISK";
+  const riskLabel = score >= 70 ? labelHigh : score >= 40 ? labelMedium : labelLow;
   const riskTextColor = score >= 70 ? "text-red-400" : score >= 40 ? "text-amber-400" : "text-emerald-400";
 
   return (
@@ -67,6 +67,9 @@ function RiskRing({ score }: { score: number }) {
 }
 
 export default function ModerationCheckerPage() {
+  const t = useT();
+  const m = t.moderation;
+
   const [headlines, setHeadlines] = useState([""]);
   const [descriptions, setDescriptions] = useState([""]);
   const [industry, setIndustry] = useState("");
@@ -101,9 +104,9 @@ export default function ModerationCheckerPage() {
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
             <Shield className="w-4 h-4 text-white" />
           </div>
-          <h1 className="text-2xl font-black text-white">Moderation Checker</h1>
+          <h1 className="text-2xl font-black text-white">{m.pageTitle}</h1>
         </div>
-        <p className="text-sm text-white/40 ml-12">Pre-screen your ads for Google policy violations before submission</p>
+        <p className="text-sm text-white/40 ml-12">{m.pageSubtitle}</p>
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -118,11 +121,11 @@ export default function ModerationCheckerPage() {
           <div>
             <div className="flex items-center justify-between mb-3">
               <label className="text-sm font-semibold text-white/60 uppercase tracking-wider">
-                Headlines <span className="text-white/25 normal-case tracking-normal font-normal">({headlines.length}/15)</span>
+                {m.headlinesLabel} <span className="text-white/25 normal-case tracking-normal font-normal">({headlines.length}/15)</span>
               </label>
               <button onClick={addHeadline} disabled={headlines.length >= 15}
                 className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 disabled:opacity-40 transition-colors">
-                <Plus className="w-3 h-3" /> Add
+                <Plus className="w-3 h-3" /> {m.addBtn}
               </button>
             </div>
             <div className="space-y-2">
@@ -132,7 +135,7 @@ export default function ModerationCheckerPage() {
                   <input
                     value={h}
                     onChange={(e) => updateHeadline(i, e.target.value)}
-                    placeholder={`Headline ${i + 1}...`}
+                    placeholder={`${m.headlinesLabel} ${i + 1}...`}
                     maxLength={30}
                     className="flex-1 px-3 py-2 rounded-lg border border-white/[0.07] bg-white/[0.04] text-white text-sm placeholder-white/20 focus:outline-none focus:border-indigo-500/40 transition-all"
                   />
@@ -151,11 +154,11 @@ export default function ModerationCheckerPage() {
           <div>
             <div className="flex items-center justify-between mb-3">
               <label className="text-sm font-semibold text-white/60 uppercase tracking-wider">
-                Descriptions <span className="text-white/25 normal-case tracking-normal font-normal">({descriptions.length}/4)</span>
+                {m.descriptionsLabel} <span className="text-white/25 normal-case tracking-normal font-normal">({descriptions.length}/4)</span>
               </label>
               <button onClick={addDescription} disabled={descriptions.length >= 4}
                 className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 disabled:opacity-40 transition-colors">
-                <Plus className="w-3 h-3" /> Add
+                <Plus className="w-3 h-3" /> {m.addBtn}
               </button>
             </div>
             <div className="space-y-2">
@@ -165,7 +168,7 @@ export default function ModerationCheckerPage() {
                   <textarea
                     value={d}
                     onChange={(e) => updateDescription(i, e.target.value)}
-                    placeholder={`Description ${i + 1}...`}
+                    placeholder={`${m.descriptionsLabel} ${i + 1}...`}
                     maxLength={90}
                     rows={2}
                     className="flex-1 px-3 py-2 rounded-lg border border-white/[0.07] bg-white/[0.04] text-white text-sm placeholder-white/20 focus:outline-none focus:border-indigo-500/40 transition-all resize-none"
@@ -183,14 +186,14 @@ export default function ModerationCheckerPage() {
 
           {/* Industry */}
           <div>
-            <label className="block text-sm font-semibold text-white/60 uppercase tracking-wider mb-2">Industry</label>
+            <label className="block text-sm font-semibold text-white/60 uppercase tracking-wider mb-2">{m.industryLabel}</label>
             <select
               value={industry}
               onChange={(e) => setIndustry(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-white/[0.08] bg-white/[0.04] text-white text-sm focus:outline-none focus:border-indigo-500/40 transition-all"
             >
-              <option value="" className="bg-[#111118]">Select industry...</option>
-              {industries.map((ind) => (
+              <option value="" className="bg-[#111118]">{m.industryPlaceholder}</option>
+              {m.industries.map((ind) => (
                 <option key={ind} value={ind} className="bg-[#111118]">{ind}</option>
               ))}
             </select>
@@ -203,9 +206,9 @@ export default function ModerationCheckerPage() {
             className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/15 disabled:opacity-60 transition-all"
           >
             {loading ? (
-              <><Loader2 className="w-4 h-4 animate-spin" />Checking moderation...</>
+              <><Loader2 className="w-4 h-4 animate-spin" />{m.checkingBtn}</>
             ) : (
-              <><Shield className="w-4 h-4" />Check Moderation</>
+              <><Shield className="w-4 h-4" />{m.checkBtn}</>
             )}
           </motion.button>
         </motion.div>
@@ -232,7 +235,7 @@ export default function ModerationCheckerPage() {
               <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                 className="rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.01] p-16 text-center">
                 <Shield className="w-10 h-10 text-white/10 mx-auto mb-4" />
-                <p className="text-white/30 text-sm font-medium">Enter your ad copy and click check</p>
+                <p className="text-white/30 text-sm font-medium">{m.emptyMsg}</p>
               </motion.div>
             )}
 
@@ -241,21 +244,29 @@ export default function ModerationCheckerPage() {
                 {/* Score overview */}
                 <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-6">
                   <div className="flex flex-col sm:flex-row items-center gap-6">
-                    <RiskRing score={results.overallRisk} />
+                    <RiskRing
+                      score={results.overallRisk}
+                      labelLow={m.riskLow}
+                      labelMedium={m.riskMedium}
+                      labelHigh={m.riskHigh}
+                    />
                     <div className="flex-1 space-y-2 text-center sm:text-left">
-                      <p className="text-sm font-bold text-white">Policy Compliance Report</p>
+                      <p className="text-sm font-bold text-white">{m.complianceTitle}</p>
                       <p className="text-xs text-white/40 leading-relaxed">
-                        Found {results.flaggedItems.length} potential policy issues and {results.safeItems.length} compliant elements.
+                        {interp(m.issuesFoundDesc, {
+                          flagged: String(results.flaggedItems.length),
+                          safe: String(results.safeItems.length),
+                        })}
                       </p>
                       <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
                         <span className="text-xs bg-red-500/10 text-red-400 px-2 py-0.5 rounded-full border border-red-500/20 font-medium">
-                          {results.flaggedItems.filter(f => f.severity === "high").length} High
+                          {results.flaggedItems.filter(f => f.severity === "high").length} {m.highLabel}
                         </span>
                         <span className="text-xs bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/20 font-medium">
-                          {results.flaggedItems.filter(f => f.severity === "medium").length} Medium
+                          {results.flaggedItems.filter(f => f.severity === "medium").length} {m.mediumLabel}
                         </span>
                         <span className="text-xs bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/20 font-medium">
-                          {results.flaggedItems.filter(f => f.severity === "low").length} Low
+                          {results.flaggedItems.filter(f => f.severity === "low").length} {m.lowLabel}
                         </span>
                       </div>
                     </div>
@@ -264,7 +275,7 @@ export default function ModerationCheckerPage() {
 
                 {/* Flagged items */}
                 <div className="space-y-3">
-                  <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">Issues Found</p>
+                  <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">{m.issuesLabel}</p>
                   {results.flaggedItems.map((flag, i) => {
                     const cfg = severityConfig[flag.severity];
                     const Icon = cfg.icon;
@@ -295,7 +306,7 @@ export default function ModerationCheckerPage() {
 
                 {/* Safe items */}
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">Compliant Elements</p>
+                  <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">{m.compliantLabel}</p>
                   {results.safeItems.map((item, i) => (
                     <motion.div
                       key={i}
@@ -316,7 +327,7 @@ export default function ModerationCheckerPage() {
                   className="w-full py-3.5 rounded-xl border border-indigo-500/30 bg-indigo-500/8 hover:bg-indigo-500/15 text-indigo-300 font-bold text-sm flex items-center justify-center gap-2 transition-all"
                 >
                   <Wand2 className="w-4 h-4" />
-                  Auto-Fix Issues with AI
+                  {m.fixBtn}
                 </motion.button>
               </motion.div>
             )}

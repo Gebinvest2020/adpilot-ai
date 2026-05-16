@@ -2,11 +2,13 @@
 
 import { motion } from "framer-motion";
 import { Star } from "lucide-react";
-import { testimonials } from "@/lib/mock-data";
-import { useT, interp } from "@/lib/i18n";
+import { testimonials, testimonialsRu } from "@/lib/mock-data";
+import { useT, useLocale, interp } from "@/lib/i18n";
 
 export default function TestimonialsSection() {
   const t = useT();
+  const { locale } = useLocale();
+  const items = locale === "ru" ? testimonialsRu : testimonials;
 
   return (
     <section className="relative py-28 px-4 sm:px-6 lg:px-8 overflow-hidden">
@@ -41,7 +43,7 @@ export default function TestimonialsSection() {
 
         {/* Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {testimonials.map((t_, index) => (
+          {items.map((t_, index) => (
             <motion.div
               key={t_.id}
               initial={{ opacity: 0, y: 40 }}

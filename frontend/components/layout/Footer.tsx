@@ -30,18 +30,18 @@ export default function Footer() {
     {
       heading: f.columns.resources,
       links: [
-        { label: f.links.documentation, href: "#" },
-        { label: f.links.apiReference, href: "#" },
-        { label: f.links.statusPage, href: "#" },
-        { label: f.links.support, href: "#" },
+        { label: f.links.documentation, href: "/docs" },
+        { label: f.links.apiReference,  href: "/docs/api" },
+        { label: f.links.statusPage,    href: "/support" },
+        { label: f.links.support,       href: "/support" },
       ],
     },
     {
       heading: f.columns.legal,
       links: [
-        { label: f.links.privacyPolicy, href: "#" },
-        { label: f.links.termsOfService, href: "#" },
-        { label: f.links.cookiePolicy, href: "#" },
+        { label: f.links.privacyPolicy,  href: "/privacy" },
+        { label: f.links.termsOfService, href: "/terms" },
+        { label: f.links.cookiePolicy,   href: "/cookies" },
       ],
     },
   ];
