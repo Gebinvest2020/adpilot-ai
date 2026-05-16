@@ -142,14 +142,28 @@ function CountrySelect({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
-  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
+  const [pos, setPos] = useState({
+    top: 0, bottom: 0, left: 0, width: 0, maxListHeight: 256, openUpward: false,
+  });
 
   const selected = options.find((o) => o.code === value);
 
   const handleOpen = () => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
-      setPos({ top: rect.bottom + 6, left: rect.left, width: rect.width });
+      const spaceBelow = window.innerHeight - rect.bottom - 8;
+      const spaceAbove = rect.top - 8;
+      const openUpward = spaceAbove > spaceBelow && spaceBelow < 200;
+      const availableSpace = openUpward ? spaceAbove : spaceBelow;
+      const maxListHeight = Math.min(280, Math.max(120, availableSpace - 52));
+      setPos({
+        top: rect.bottom + 6,
+        bottom: window.innerHeight - rect.top + 6,
+        left: rect.left,
+        width: rect.width,
+        maxListHeight,
+        openUpward,
+      });
     }
     setOpen(true);
     setSearch("");
@@ -173,10 +187,13 @@ function CountrySelect({
     return () => document.removeEventListener("mousedown", handle);
   }, [open]);
 
-  // Close on scroll or resize to avoid stale position
+  // Close on scroll/resize — but not when scrolling inside the dropdown itself
   useEffect(() => {
     if (!open) return;
-    const close = () => handleClose();
+    const close = (e: Event) => {
+      if (dropdownRef.current && dropdownRef.current.contains(e.target as Node)) return;
+      handleClose();
+    };
     window.addEventListener("scroll", close, true);
     window.addEventListener("resize", close);
     return () => {
@@ -201,11 +218,15 @@ function CountrySelect({
       {open && (
         <motion.div
           ref={dropdownRef}
-          initial={{ opacity: 0, y: -6, scale: 0.97 }}
+          initial={{ opacity: 0, y: pos.openUpward ? 6 : -6, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -6, scale: 0.97 }}
+          exit={{ opacity: 0, y: pos.openUpward ? 6 : -6, scale: 0.97 }}
           transition={{ duration: 0.14, ease: "easeOut" }}
-          style={{ position: "fixed", top: pos.top, left: pos.left, width: pos.width, zIndex: 9999 }}
+          style={
+            pos.openUpward
+              ? { position: "fixed" as const, bottom: pos.bottom, top: "auto", left: pos.left, width: pos.width, zIndex: 9999 }
+              : { position: "fixed" as const, top: pos.top, bottom: "auto", left: pos.left, width: pos.width, zIndex: 9999 }
+          }
           className="rounded-xl border border-white/[0.1] bg-[#0d0d14] shadow-2xl shadow-black/70 overflow-hidden"
         >
           {/* Search input */}
@@ -223,7 +244,10 @@ function CountrySelect({
           </div>
 
           {/* Grouped list */}
-          <div className="overflow-y-auto max-h-64 overscroll-contain">
+          <div
+            className="overflow-y-auto overscroll-contain [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/20"
+            style={{ maxHeight: pos.maxListHeight }}
+          >
             {groups.length === 0 ? (
               <p className="px-4 py-6 text-xs text-white/25 text-center">No results</p>
             ) : (
@@ -238,10 +262,10 @@ function CountrySelect({
                       type="button"
                       onClick={() => { onChange(country.code); handleClose(); }}
                       className={cn(
-                        "w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors duration-100 hover:bg-white/[0.06] active:bg-white/[0.09]",
+                        "w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors duration-100",
                         value === country.code
-                          ? "bg-indigo-500/10 text-indigo-300"
-                          : "text-white/70"
+                          ? "bg-indigo-500/[0.12] text-indigo-300 hover:bg-indigo-500/[0.18]"
+                          : "text-white/70 hover:bg-white/[0.07] hover:text-white/90 active:bg-white/[0.09]"
                       )}
                     >
                       <span className="text-base leading-none w-5 text-center flex-shrink-0">{country.flag}</span>

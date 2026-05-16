@@ -44,11 +44,14 @@ interface BusinessContext {
   outputLang: Lang;
   product: string;       // short headline form (≤20 chars where possible)
   productDesc: string;   // longer description form (≤30 chars)
-  cityLocRu: string | null;  // "в Ташкенте"
-  cityNameRu: string | null; // "Ташкент"
-  cityNameEn: string | null; // "Tashkent"
-  audienceRu: string | null; // "для детей"
-  audienceEn: string | null; // "for kids"
+  cityLocRu: string | null;      // "в Ташкенте"
+  cityNameRu: string | null;     // "Ташкент"
+  cityNameEn: string | null;     // "Tashkent"
+  countryCode: string;           // "AM", "RU", etc.
+  countryNameRu: string | null;  // "Армения"
+  countryNameEn: string | null;  // "Armenia"
+  audienceRu: string | null;     // "для детей"
+  audienceEn: string | null;     // "for kids"
   sensitive: SensitiveCategory | null;
   isOnline: boolean;
   isCourse: boolean;
@@ -124,37 +127,38 @@ const CITIES: CityEntry[] = [
 ];
 
 // Country-level fallback (when no city found in text but country selected on form)
-const COUNTRY_LOC: Record<string, { ru: string; en: string }> = {
-  RU:  { ru: "в России",           en: "in Russia" },
-  KZ:  { ru: "в Казахстане",       en: "in Kazakhstan" },
-  UA:  { ru: "в Украине",          en: "in Ukraine" },
-  BY:  { ru: "в Беларуси",         en: "in Belarus" },
-  UZ:  { ru: "в Узбекистане",      en: "in Uzbekistan" },
-  AZ:  { ru: "в Азербайджане",     en: "in Azerbaijan" },
-  AM:  { ru: "в Армении",          en: "in Armenia" },
-  GE:  { ru: "в Грузии",           en: "in Georgia" },
-  MD:  { ru: "в Молдове",          en: "in Moldova" },
-  KG:  { ru: "в Кыргызстане",      en: "in Kyrgyzstan" },
-  TJ:  { ru: "в Таджикистане",     en: "in Tajikistan" },
-  TM:  { ru: "в Туркменистане",    en: "in Turkmenistan" },
-  US:  { ru: "в США",              en: "in the US" },
-  GB:  { ru: "в Великобритании",   en: "in the UK" },
-  DE:  { ru: "в Германии",         en: "in Germany" },
-  AU:  { ru: "в Австралии",        en: "in Australia" },
-  CA:  { ru: "в Канаде",           en: "in Canada" },
-  FR:  { ru: "во Франции",         en: "in France" },
-  NL:  { ru: "в Нидерландах",      en: "in the Netherlands" },
-  CH:  { ru: "в Швейцарии",        en: "in Switzerland" },
-  AE:  { ru: "в ОАЭ",             en: "in UAE" },
-  SG:  { ru: "в Сингапуре",        en: "in Singapore" },
-  ES:  { ru: "в Испании",          en: "in Spain" },
-  IT:  { ru: "в Италии",           en: "in Italy" },
-  PL:  { ru: "в Польше",           en: "in Poland" },
-  SE:  { ru: "в Швеции",           en: "in Sweden" },
-  NO:  { ru: "в Норвегии",         en: "in Norway" },
-  DK:  { ru: "в Дании",            en: "in Denmark" },
-  CIS: { ru: "в СНГ",              en: "in CIS" },
-  CEE: { ru: "в Восточной Европе", en: "in Eastern Europe" },
+interface CountryLocEntry { ru: string; en: string; nominRu: string; nominEn: string; }
+const COUNTRY_LOC: Record<string, CountryLocEntry> = {
+  RU:  { ru: "в России",           en: "in Russia",           nominRu: "Россия",          nominEn: "Russia" },
+  KZ:  { ru: "в Казахстане",       en: "in Kazakhstan",       nominRu: "Казахстан",        nominEn: "Kazakhstan" },
+  UA:  { ru: "в Украине",          en: "in Ukraine",          nominRu: "Украина",          nominEn: "Ukraine" },
+  BY:  { ru: "в Беларуси",         en: "in Belarus",          nominRu: "Беларусь",         nominEn: "Belarus" },
+  UZ:  { ru: "в Узбекистане",      en: "in Uzbekistan",       nominRu: "Узбекистан",       nominEn: "Uzbekistan" },
+  AZ:  { ru: "в Азербайджане",     en: "in Azerbaijan",       nominRu: "Азербайджан",      nominEn: "Azerbaijan" },
+  AM:  { ru: "в Армении",          en: "in Armenia",          nominRu: "Армения",          nominEn: "Armenia" },
+  GE:  { ru: "в Грузии",           en: "in Georgia",          nominRu: "Грузия",           nominEn: "Georgia" },
+  MD:  { ru: "в Молдове",          en: "in Moldova",          nominRu: "Молдова",          nominEn: "Moldova" },
+  KG:  { ru: "в Кыргызстане",      en: "in Kyrgyzstan",       nominRu: "Кыргызстан",       nominEn: "Kyrgyzstan" },
+  TJ:  { ru: "в Таджикистане",     en: "in Tajikistan",       nominRu: "Таджикистан",      nominEn: "Tajikistan" },
+  TM:  { ru: "в Туркменистане",    en: "in Turkmenistan",     nominRu: "Туркменистан",     nominEn: "Turkmenistan" },
+  US:  { ru: "в США",              en: "in the US",           nominRu: "США",              nominEn: "USA" },
+  GB:  { ru: "в Великобритании",   en: "in the UK",           nominRu: "Великобритания",   nominEn: "UK" },
+  DE:  { ru: "в Германии",         en: "in Germany",          nominRu: "Германия",         nominEn: "Germany" },
+  AU:  { ru: "в Австралии",        en: "in Australia",        nominRu: "Австралия",        nominEn: "Australia" },
+  CA:  { ru: "в Канаде",           en: "in Canada",           nominRu: "Канада",           nominEn: "Canada" },
+  FR:  { ru: "во Франции",         en: "in France",           nominRu: "Франция",          nominEn: "France" },
+  NL:  { ru: "в Нидерландах",      en: "in the Netherlands",  nominRu: "Нидерланды",       nominEn: "Netherlands" },
+  CH:  { ru: "в Швейцарии",        en: "in Switzerland",      nominRu: "Швейцария",        nominEn: "Switzerland" },
+  AE:  { ru: "в ОАЭ",             en: "in UAE",              nominRu: "ОАЭ",              nominEn: "UAE" },
+  SG:  { ru: "в Сингапуре",        en: "in Singapore",        nominRu: "Сингапур",         nominEn: "Singapore" },
+  ES:  { ru: "в Испании",          en: "in Spain",            nominRu: "Испания",          nominEn: "Spain" },
+  IT:  { ru: "в Италии",           en: "in Italy",            nominRu: "Италия",           nominEn: "Italy" },
+  PL:  { ru: "в Польше",           en: "in Poland",           nominRu: "Польша",           nominEn: "Poland" },
+  SE:  { ru: "в Швеции",           en: "in Sweden",           nominRu: "Швеция",           nominEn: "Sweden" },
+  NO:  { ru: "в Норвегии",         en: "in Norway",           nominRu: "Норвегия",         nominEn: "Norway" },
+  DK:  { ru: "в Дании",            en: "in Denmark",          nominRu: "Дания",            nominEn: "Denmark" },
+  CIS: { ru: "в СНГ",              en: "in CIS",              nominRu: "СНГ",              nominEn: "CIS" },
+  CEE: { ru: "в Восточной Европе", en: "in Eastern Europe",   nominRu: "Восточная Европа", nominEn: "Eastern Europe" },
 };
 
 // ─── Audience database ─────────────────────────────────────────────────────────
@@ -243,6 +247,53 @@ function accRu(phrase: string): string {
   return [acc, ...parts.slice(1)].join(" ");
 }
 
+/** Convert first word of a Russian noun phrase to genitive (best-effort) */
+function genRu(phrase: string): string {
+  if (!hasCyrillic(phrase)) return phrase;
+  const parts = phrase.split(" ");
+  const orig = parts[0];
+  const w = orig.toLowerCase();
+  let gen = orig;
+
+  // Likely indeclinable loanwords ending in consonant+и (суши, такси, жюри, etc.)
+  const indeclinableEnds = ["ши", "жи", "чи", "щи", "ти", "си", "ни", "ли", "ри", "пи", "ви", "би", "ми", "хи"];
+  if (indeclinableEnds.some(e => w.endsWith(e)) && w.length > 3) return phrase;
+
+  if      (w.endsWith("ия"))  gen = orig.slice(0, -2) + "ии";
+  else if (w.endsWith("ая"))  gen = orig.slice(0, -2) + "ой";
+  else if (w.endsWith("яя"))  gen = orig.slice(0, -2) + "ей";
+  else if (w.endsWith("я"))   gen = orig.slice(0, -1) + "и";
+  else if (w.endsWith("й"))   gen = orig.slice(0, -1) + "я";
+  else if (w.endsWith("сть")) gen = orig.slice(0, -3) + "сти";
+  else if (w.endsWith("ь"))   gen = orig.slice(0, -1) + "и";
+  // -а with preceding velar/sibilant → -и
+  else if (/[кгхжшщчц]а$/.test(w)) gen = orig.slice(0, -1) + "и";
+  // -а with other consonant → -ы
+  else if (w.endsWith("а") && w.length >= 3) gen = orig.slice(0, -1) + "ы";
+  // masculine consonant ending → +а
+  else if (/[бвгджзклмнпрстфхцчшщ]$/.test(w)) gen = orig + "а";
+
+  return [gen, ...parts.slice(1)].join(" ");
+}
+
+/** Strip leading service verb (доставка, аренда, …) to get core product noun */
+function coreProduct(product: string): string {
+  const prefixes = [
+    "доставка ", "аренда ", "ремонт ", "установка ", "монтаж ",
+    "обслуживание ", "услуги ", "продажа ", "производство ",
+    "изготовление ", "покупка ", "строительство ",
+    "проектирование ", "разработка ", "создание ",
+  ];
+  const lower = product.toLowerCase();
+  for (const prefix of prefixes) {
+    if (lower.startsWith(prefix)) {
+      const stripped = product.slice(prefix.length).trim();
+      if (stripped.length > 0) return cap(stripped);
+    }
+  }
+  return product;
+}
+
 // ─── Extraction functions ──────────────────────────────────────────────────────
 
 export function extractLocation(text: string, countryCode: string): CityEntry | null {
@@ -306,8 +357,9 @@ function stripAudienceFromText(text: string, audience: AudienceEntry): string {
 
 function stripIntros(text: string): string {
   const ruPatterns = [
+    /^у меня\s+бизнес\s+/i, /^у нас\s+бизнес\s+/i,
     /^у меня\s+/i, /^у нас\s+/i,
-    /^я продаю\s+/i, /^мы продаём?\s+/i, /^продаём?\s+/i, /^продаю\s+/i,
+    /^я продаю\s+/i, /^мы продаём?\s+/i, /^продаём?\s+/i, /^продаю\s+/i, /^продаем\s+/i,
     /^я занимаюсь\s+/i, /^мы занимаемся\s+/i, /^занимаюсь\s+/i, /^занимаемся\s+/i,
     /^открыл(?:а|и)?\s+/i, /^есть\s+/i, /^имею\s+/i, /^имеем\s+/i,
     /^предоставляю\s+/i, /^предоставляем\s+/i,
@@ -317,6 +369,8 @@ function stripIntros(text: string): string {
     /^рекламирую\s+/i, /^запускаю\s+/i,
     /^мой бизнес[:\s]+/i, /^наш бизнес[:\s]+/i,
     /^я предлагаю\s+/i, /^мы предлагаем\s+/i, /^предлагаю\s+/i,
+    // Remove "в городе" / "в стране" location helper phrases
+    /\bв\s+городе\s+/gi, /\bв\s+стране\s+/gi,
   ];
   const enPatterns = [
     /^i sell\s+/i, /^we sell\s+/i, /^i have\s+(?:a\s+)?/i, /^we have\s+(?:a\s+)?/i,
@@ -333,9 +387,57 @@ function stripIntros(text: string): string {
   for (const re of [...ruPatterns, ...enPatterns]) {
     result = result.replace(re, "");
   }
-  // Remove leading prepositions left behind ("по", "с", "в")
-  result = result.replace(/^(?:по|с|в|во|из|для)\s+/i, "");
+  // Remove leading prepositions left behind ("по", "с", "в", "об", "о")
+  result = result.replace(/^(?:по|с|в|во|из|для|об|о)\s+/i, "");
   return result.replace(/\s{2,}/g, " ").trim();
+}
+
+/**
+ * Normalize education/course phrases to extract the real subject.
+ *
+ * Examples:
+ *   "бизнес курсы по обучению криптовалюте" → "обучение криптовалюте"
+ *   "курсы по инвестициям"                  → "обучение инвестициям"
+ *   "бизнес курсы английского"              → "курс английского"
+ *   "обучение по крипте"                    → "обучение крипте"
+ *   "тренинг по маркетингу"                 → "обучение маркетингу"
+ *
+ * Test case:
+ *   Input:    "бизнес курсы по обучению криптовалюте в кишинёве"
+ *   After city strip: "бизнес курсы по обучению криптовалюте"
+ *   After normalization: "обучение криптовалюте"
+ *   Expected product: "Обучение криптовалюте"
+ *   Expected category: crypto
+ *   Expected location: Кишинёв / Moldova (MD)
+ */
+function normalizeEducationPhrase(text: string): string {
+  let t = text.trim();
+
+  // "бизнес курсы по обучению X" → "обучение X"
+  t = t.replace(/^бизнес[-\s]+курс[ыа]?\s+по\s+обучению\s+/i, "обучение ");
+  // "бизнес курсы по X" → "обучение X"
+  t = t.replace(/^бизнес[-\s]+курс[ыа]?\s+по\s+/i, "обучение ");
+  // "бизнес курсы X" → "курс X" (drop "бизнес" before "курс")
+  t = t.replace(/^бизнес[-\s]+(?=курс)/i, "");
+
+  // "курсы по обучению X" → "обучение X"
+  t = t.replace(/^курс[ыа]?\s+по\s+обучению\s+/i, "обучение ");
+  // "курсы по X" → "обучение X"
+  t = t.replace(/^курс[ыа]?\s+по\s+/i, "обучение ");
+
+  // "обучению X" at start (dative) → "обучение X"
+  t = t.replace(/^обучению\s+/i, "обучение ");
+  // "обучение по X" → "обучение X"
+  t = t.replace(/^обучени[ею]\s+по\s+/i, "обучение ");
+
+  // "тренинг по X" / "вебинар по X" → "обучение X"
+  t = t.replace(/^тренинг[иа]?\s+по\s+/i, "обучение ");
+  t = t.replace(/^вебинар[ыа]?\s+по\s+/i, "обучение ");
+
+  // Strip any remaining dangling leading prepositions
+  t = t.replace(/^(?:по|с|об|о)\s+/i, "");
+
+  return t.replace(/\s{2,}/g, " ").trim();
 }
 
 export function extractProductOrService(
@@ -354,14 +456,18 @@ export function extractProductOrService(
   // Strip intro phrases
   text = stripIntros(text);
 
+  // Normalize education/course phrases ("курсы по X" → "обучение X")
+  text = normalizeEducationPhrase(text);
+
   // Remove punctuation at ends, clean spaces
   text = text.replace(/[,.:;!?]+$/, "").replace(/^[,.:;!?\s]+/, "").trim();
 
   if (!text) text = rawInput.trim();
 
+  // Use full 28-char name as the product identifier; fit() in headline
+  // generation will skip templates that exceed the 30-char headline limit.
   const full = truncWords(cap(text), 28);
-  const short = truncWords(cap(text), 20);
-  return { short, full };
+  return { short: full, full };
 }
 
 // ─── Business context parser ───────────────────────────────────────────────────
@@ -384,12 +490,16 @@ export function parseBusinessInput(
   let cityNameRu: string | null = city?.nameRu ?? null;
   let cityNameEn: string | null = city?.nameEn ?? null;
 
-  // Fall back to country-level location
-  if (!city && countryCode && COUNTRY_LOC[countryCode]) {
-    const cp = COUNTRY_LOC[countryCode];
-    cityLocRu = cp.ru;
-    cityNameRu = cp.ru.replace(/^(?:в|во|из|на)\s+/i, "");
-    cityNameEn = cp.en.replace(/^(?:in|the)\s+/i, "");
+  // Always resolve country nominals (regardless of city)
+  const countryEntry = countryCode ? COUNTRY_LOC[countryCode] : undefined;
+  const countryNameRu = countryEntry?.nominRu ?? null;
+  const countryNameEn = countryEntry?.nominEn ?? null;
+
+  // Fall back to country-level location when no city found
+  if (!city && countryEntry) {
+    cityLocRu = countryEntry.ru;
+    cityNameRu = countryEntry.nominRu;
+    cityNameEn = countryEntry.nominEn;
   }
 
   return {
@@ -400,6 +510,9 @@ export function parseBusinessInput(
     cityLocRu,
     cityNameRu,
     cityNameEn,
+    countryCode: countryCode ?? "",
+    countryNameRu,
+    countryNameEn,
     audienceRu: audience?.ruPhrase ?? null,
     audienceEn: audience?.enPhrase ?? null,
     sensitive,
@@ -418,137 +531,250 @@ interface HeadlineCandidate {
 }
 
 function generateUniversalHeadlines(ctx: BusinessContext): HeadlineCandidate[] {
-  const { product, outputLang: lang, cityLocRu, cityNameEn, audienceRu, audienceEn, sensitive, isOnline, isCourse } = ctx;
-  const loc = lang === "ru" ? cityLocRu : (cityNameEn ? `in ${cityNameEn}` : null);
-  const aud = lang === "ru" ? audienceRu : audienceEn;
-  const acc = lang === "ru" ? accRu(product) : product;
+  const {
+    product, outputLang: lang,
+    cityLocRu, cityNameRu, cityNameEn,
+    countryCode, countryNameRu, countryNameEn,
+    audienceRu, audienceEn,
+    sensitive, isOnline, isCourse,
+  } = ctx;
+
+  const aud     = lang === "ru" ? audienceRu   : audienceEn;
+  const acc     = lang === "ru" ? accRu(product) : product;
+  const gen     = lang === "ru" ? genRu(product) : product;
+  const core    = coreProduct(product);
+  const coreAcc = core !== product && lang === "ru" ? accRu(core) : core;
+
+  // Suppress "Аренда" prefix for service niches where renting makes no sense
+  const noАренда = sensitive === "medical" || sensitive === "legal" ||
+                   sensitive === "finance" || sensitive === "crypto";
+
+  // Suppress guaranteed-outcome / profit claims for regulated categories
+  const noUnsafeModifiers = sensitive === "crypto" || sensitive === "finance" ||
+                             sensitive === "medical" || sensitive === "legal";
 
   const candidates: HeadlineCandidate[] = [];
-
   const add = (text: string | null, score: number, tip: string) => {
-    if (text && text.length <= 30) candidates.push({ text, score, tip });
+    if (text && text.length >= 3 && text.length <= 30) candidates.push({ text, score, tip });
   };
 
-  // ── Tier 1: product + location (most specific) ──
-  if (loc) {
-    add(fit(`${product} ${loc}`), 94, lang === "ru"
-      ? "Геолокация + продукт — точное совпадение с поисковым запросом"
-      : "Location + product — exact match with local search intent");
-  }
-
-  // ── Tier 2: product + audience ──
-  if (aud) {
-    add(fit(`${product} ${aud}`), 91, lang === "ru"
-      ? "Продукт + аудитория — высокая релевантность для целевой группы"
-      : "Product + audience — high relevance for the target group");
-  }
-
-  // ── Tier 3: product action variations ──
   if (lang === "ru") {
-    add(fit(`${product}: узнайте условия`), 88, "Продукт + призыв к действию — снимает барьер первого шага");
-    add(fit(`${product} онлайн`),           87, "«Онлайн» повышает CTR для сервисов с возможностью записи");
-    add(fit(`Подберите ${acc} онлайн`),     86, "Глагол «подберите» снижает порог принятия решения");
-    add(fit(`Узнайте о ${product}`),        84, "Информационный фрейм — безопасен для любой ниши");
-    add(fit(`${product}: оставьте заявку`), 83, "Прямой CTA в заголовке ускоряет конверсию");
-    add(fit(`Закажите ${acc}`),             82, "Прямой призыв к покупке — работает для товаров и услуг");
-    add(fit(`${product} с консультацией`),  81, "Консультация снижает страх перед первым контактом");
-    if (isCourse) {
-      add(fit(`Запишитесь: ${product}`),   90, "«Запишитесь» — самый конверсионный CTA для курсов");
-      add(fit(`${product} — начни сейчас`), 88, "Срочность + образование = высокий CTR в EdTech");
+    // ── Crypto-specific safe education headlines (highest priority) ───────────
+    if (sensitive === "crypto") {
+      const cryptoLoc = cityLocRu ?? (countryNameRu ? `в ${countryNameRu}` : null);
+      const cryptoCity = cityNameRu ?? countryNameRu ?? null;
+      // Static safe crypto education headlines
+      add("Обучение криптовалюте",           99, "Прямое название ниши — максимальное совпадение с запросом");
+      add("Основы криптовалют",              98, "Основы — безопасный образовательный фрейм");
+      add("Крипто курс для новичков",        97, "Курс + аудитория новичков — высокий CTR в EdTech");
+      add("Крипто обучение онлайн",          96, "Онлайн + обучение — широкий охват для дистанционного формата");
+      add("Разберите риски крипты",          96, "Риски — соответствует требованиям политики Google Ads");
+      add("Блокчейн для начинающих",         95, "Блокчейн + аудитория — техническая аудитория с высоким CPC");
+      add("Криптовалюта простыми словами",   95, "Простые слова — снижает барьер входа для широкой аудитории");
+      add("Вводный урок по крипте",          94, "Вводный урок — мягкий первый шаг, высокий CTR");
+      add("Обучение крипте с нуля",          94, "С нуля — самый частый запрос у начинающих");
+      add("Криптовалюта без сложных слов",   93, "Простота подачи — ключевой УТП для крипто-EdTech");
+      add("Крипто знания для старта",        92, "Для старта — четкий CTA для новичков");
+      add("Как работает криптовалюта",       92, "Информационный запрос — высокий объём поиска");
+      add("Курс по блокчейну",               91, "Блокчейн-ключевое слово для технически подкованной аудитории");
+      add("Основы Web3 и крипты",            90, "Web3 — привлекает технически грамотную аудиторию");
+      // Location-aware variants
+      if (cryptoLoc) add(fit(`Курс по крипте ${cryptoLoc}`), 97, "Курс + геолокация — точное попадание в гео-запрос");
+      if (cryptoCity) add(fit(`Обучение крипте ${cryptoCity}`), 95, "Обучение + город — локальный охват");
+      if (cryptoCity) add(fit(`Крипто курс ${cryptoCity}`), 94, "Курс + город — геолокационный сигнал");
     }
-    if (isOnline && !fit(`${product} онлайн`)) {
-      add(fit(`${product}. Формат онлайн`), 85, "Уточнение онлайн-формата повышает кликабельность");
-    }
-    if (loc) {
-      add(fit(`${product} — работаем ${loc}`), 83, "Подтверждение присутствия в регионе укрепляет доверие");
-    }
-    if (aud) {
-      add(fit(`${acc} ${aud}`), 82, "Акцент на ЦА — сильный сигнал релевантности для алгоритма");
-    }
-  } else {
-    // English
-    add(fit(`${product} Online`),                 87, "Online modifier boosts CTR for service-based businesses");
-    add(fit(`Choose ${product} Today`),           86, "Action verb + urgency = higher engagement rate");
-    add(fit(`Find ${product} ${loc ?? "Nearby"}`),84, "Location relevance drives local searcher clicks");
-    add(fit(`Book ${product} Consultation`),       83, "Low-friction CTA — 'book' is softer than 'buy'");
-    add(fit(`${product}: Get Details`),            82, "Colon structure draws attention in search results");
-    add(fit(`${product} With Free Advice`),        81, "Free consultation offer lowers conversion barrier");
-    add(fit(`Compare ${product} Options`),         80, "Comparison frame works well for consideration-phase buyers");
-    if (isCourse) {
-      add(fit(`Enroll: ${product}`),              90, "Enroll CTA is #1 for online education ads");
-      add(fit(`${product} — Start Today`),        88, "Immediacy + education = strong EdTech hook");
-    }
-    if (loc) {
-      add(fit(`${product} in ${cityNameEn}`),     89, "City-specific headline matches local search perfectly");
-    }
-    if (aud) {
-      add(fit(`${product} ${aud}`),               86, "Audience qualifier increases ad relevance score");
-    }
-  }
 
-  // ── Tier 4: universal safety formulas ──
-  if (lang === "ru") {
-    const universals: [string, number, string][] = [
-      ["Найдите подходящий вариант",    76, "Нейтральный призыв — работает для любого продукта"],
-      ["Получите консультацию",         75, "Консультация как первый шаг — снижает порог входа"],
-      ["Сравните варианты заранее",     74, "Фрейм сравнения привлекает аудиторию на стадии выбора"],
-      ["Узнайте условия сегодня",       74, "Сигнал срочности без агрессивных обещаний"],
-      ["Начните с понятного шага",      73, "Снижает тревогу перед новым продуктом"],
-      ["Оставьте заявку онлайн",        72, "Прямой CTA с низким порогом — высокий CTR для лидов"],
-      ["Подберите решение онлайн",      72, "«Подберите» — мягкий призыв без давления"],
-      ["Получите подробности",          71, "Информационный запрос — безопасен для любой ниши"],
-      ["Разберитесь перед выбором",     70, "Снимает страх покупки через образование"],
-      ["Выберите подходящий формат",    69, "Акцент на выборе — доверительный тон"],
-      ["Получите вводную консультацию", 68, "«Вводная» снижает воспринимаемый риск контакта"],
-      ["Узнайте больше перед выбором",  67, "Информационный фрейм отвечает на стадию исследования"],
-      ["Официальная информация онлайн", 66, "Сигнал надёжности без конкретных обещаний"],
-      ["Запросить детали сегодня",      65, "Лёгкий первый шаг — оптимален для B2B-запросов"],
-      ["Выберите подходящий вариант",   65, "Акцент на выборе повышает вовлечённость"],
+    // ── Tier 1: Product + city (score 89–95) ──────────────────────────────────
+    if (cityLocRu && cityNameRu) {
+      add(fit(`${product} ${cityLocRu}`),             95, "Геолокация + продукт — точное совпадение с поисковым запросом");
+      add(fit(`${product} ${cityNameRu}`),            93, "Продукт + город (именительный) — широкое совпадение без предлога");
+      if (!noАренда) add(fit(`Аренда ${gen} ${cityNameRu}`), 91, "Аренда + генитив + город — формула для техники и оборудования");
+      add(fit(`Услуги ${gen} ${cityNameRu}`),         91, "Услуги + генитив + город — универсальная сервисная формула");
+      add(fit(`Заказать ${acc} ${cityNameRu}`),       89, "Заказать + аккузатив + город — прямой CTA с геолокацией");
+    } else if (cityLocRu) {
+      add(fit(`${product} ${cityLocRu}`),             95, "Геолокация + продукт — точное совпадение с поисковым запросом");
+    }
+
+    // ── Tier 2: Product + country (score 84–90) ───────────────────────────────
+    const countryEntry = countryCode ? COUNTRY_LOC[countryCode] : undefined;
+    const cntLocRu = countryEntry?.ru ?? null;
+    if (cntLocRu && countryNameRu && countryNameRu !== cityNameRu) {
+      add(fit(`${product} ${cntLocRu}`),              90, "Продукт + страна (локатив) — региональный охват");
+      add(fit(`${product} ${countryNameRu}`),         88, "Продукт + страна (именительный) — широкий охват");
+      if (countryCode.length <= 3) {
+        add(fit(`${product} ${countryCode}`),         86, "Код страны — компактный геосигнал в заголовке");
+        add(fit(`Услуги ${gen} ${countryCode}`),      85, "Услуги + генитив + код страны");
+        if (!noАренда) add(fit(`Аренда ${gen} ${countryCode}`), 84, "Аренда + генитив + код страны");
+      }
+    }
+
+    // ── Tier 3: Service-prefix variants without location (score 80–84) ────────
+    if (!noАренда) add(fit(`Аренда ${gen}`),          83, "Аренда + генитив — ключевая формула для техники");
+    add(fit(`Услуги ${gen}`),                         82, "Услуги + генитив — универсальная сервисная формула");
+    add(fit(`Заказать ${acc}`),                       82, "Заказать + аккузатив — прямой призыв к покупке");
+    add(fit(`Профессиональный ${acc}`),               80, "Профессиональный — сигнал качества и экспертизы");
+
+    // ── Tier 4: Product modifiers (score 76–84) ───────────────────────────────
+    if (!noUnsafeModifiers) {
+      add(fit(`${product} с оператором`),             84, "С оператором — ключевой признак для спецтехники");
+      add(fit(`${product} под ключ`),                 83, "Под ключ — сигнал комплексного решения");
+      add(fit(`${product} с гарантией`),              82, "Гарантия — снятие возражения по качеству");
+    }
+    add(fit(`${product} от специалиста`),             81, "От специалиста — сигнал экспертизы и опыта");
+    add(fit(`${product} под задачу`),                 80, "Под задачу — акцент на индивидуальном подходе");
+    add(fit(`${product} срочно`),                     79, "Срочно — высокий CTR для неотложных запросов");
+    if (!noUnsafeModifiers) {
+      add(fit(`${product} по выгодной цене`),         78, "Выгодная цена — ценностное предложение");
+      add(fit(`${product} без предоплаты`),           77, "Без предоплаты — снятие финансового барьера");
+      add(fit(`${product} с выездом`),                76, "Выезд — ключевой признак для выездных услуг");
+    }
+
+    // ── Tier 5: Audience ──────────────────────────────────────────────────────
+    if (aud) {
+      add(fit(`${product} ${aud}`),                   88, "Продукт + аудитория — высокая релевантность для сегмента");
+      add(fit(`${acc} ${aud}`),                       82, "Аккузатив + аудитория — акцент на целевой группе");
+    }
+
+    // ── Tier 6: Online / course ───────────────────────────────────────────────
+    if (isOnline || isCourse) {
+      add(fit(`${product} онлайн`),                   86, "Онлайн повышает CTR для дистанционных сервисов");
+    }
+    if (isCourse) {
+      add(fit(`Запишитесь: ${product}`),              90, "«Запишитесь» — самый конверсионный CTA для курсов");
+      add(fit(`${product} — начни сейчас`),           88, "Срочность + обучение = высокий CTR в EdTech");
+    }
+
+    // ── Tier 7: Core product for compound inputs (e.g. "доставка суши") ──────
+    if (core !== product) {
+      if (cityNameRu) {
+        add(fit(`${core} с доставкой ${cityNameRu}`), 87, "Базовый продукт + доставка + город");
+        add(fit(`Заказать ${coreAcc} ${cityNameRu}`), 86, "Заказать базовый продукт + город");
+      }
+      add(fit(`${core} с доставкой`),                 84, "Базовый продукт с доставкой");
+      add(fit(`Заказать ${coreAcc} онлайн`),          82, "Заказать базовый продукт онлайн");
+    }
+
+    // ── Tier 8: Sensitive-category specific ───────────────────────────────────
+    if (sensitive === "medical") {
+      add(fit(`${product}: запись онлайн`),           91, "Запись к специалисту онлайн — безопасный фрейм");
+      add(fit(`Запись к специалисту`),                88, "«Специалист» вместо «врач» — нейтральнее для модерации");
+      add(fit(`${product}: консультация`),            86, "Консультация — безопасный первый шаг в медтеме");
+    }
+    if (sensitive === "legal") {
+      add(fit(`Задайте вопрос юристу`),               88, "«Вопрос» снимает правовую ответственность за совет");
+      add(fit(`${product}: задать вопрос`),           85, "Продукт + первый шаг для юридических услуг");
+    }
+    if (sensitive === "finance" || sensitive === "crypto") {
+      add(fit(`Узнайте условия и риски`),             85, "Риски — соответствует политике Google для финансов");
+      add(fit(`${product}: образовательный курс`),    82, "Образовательный фрейм снижает риск отклонения");
+    }
+    if (sensitive === "realestate") {
+      add(fit(`${product}: подбор объектов`),         86, "Подбор объектов — мягкий CTA для недвижимости");
+      add(fit(`${product} без посредников`),          84, "Без посредников — сильный дифференциатор");
+    }
+
+    // ── Tier 9: Product-referenced fillers (still on-topic) ──────────────────
+    add(fit(`${product}: оставьте заявку`),           77, "Продукт + CTA — всегда релевантно");
+    add(fit(`${product}: звоните сейчас`),            76, "Телефонный CTA — высокий CTR для B2C");
+    add(fit(`${product} в наличии`),                  75, "В наличии — сигнал готовности к поставке");
+
+    // ── Tier 10: Fully generic fillers (max 3 slots, lowest priority) ────────
+    const generics: [string, number, string][] = [
+      ["Оставьте заявку онлайн",        72, "Прямой CTA с низким порогом — высокий CTR"],
+      ["Получите консультацию",         71, "Консультация как первый шаг"],
+      ["Узнайте условия сегодня",       70, "Сигнал срочности без агрессии"],
+      ["Сравните варианты заранее",     69, "Фрейм сравнения — аудитория на стадии выбора"],
+      ["Подберите решение онлайн",      68, "Мягкий призыв без давления"],
+      ["Начните с понятного шага",      67, "Снижает тревогу перед новым продуктом"],
     ];
-    for (const [text, score, tip] of universals) add(text, score, tip);
+    for (const [text, score, tip] of generics) add(text, score, tip);
+
   } else {
-    const universals: [string, number, string][] = [
-      ["Find the Right Option",          76, "Discovery framing appeals to consideration-phase buyers"],
-      ["Get a Free Consultation",        75, "Free consultation offer reduces conversion friction"],
-      ["Compare Options Before Buying",  74, "Comparison frame matches research-phase search intent"],
+    // ── English ───────────────────────────────────────────────────────────────
+
+    // ── Crypto-specific safe education headlines (EN) ─────────────────────────
+    if (sensitive === "crypto") {
+      const cryptoCityEn = cityNameEn ?? countryNameEn ?? null;
+      add("Learn Crypto Basics",              99, "Direct match for beginner crypto education search");
+      add("Crypto Course for Beginners",      98, "Beginners framing — highest volume EdTech search term");
+      add("Understand How Crypto Works",      97, "How-it-works frame — informational query match");
+      add("Blockchain 101 Online",            96, "101 format signals beginner-friendly content");
+      add("Crypto Without the Hype",          96, "Without hype — trust signal for risk-aware searchers");
+      add("Understand Crypto Risks",          95, "Risk mention satisfies Google financial ad policy");
+      add("Intro to Blockchain & Crypto",     95, "Intro framing — low barrier, high CTR for new audiences");
+      add("Crypto Explained Simply",          94, "Simply — reduces perceived complexity barrier");
+      add("Web3 & Crypto Basics",             93, "Web3 framing attracts tech-forward audiences");
+      add("Start With Crypto Fundamentals",   92, "Fundamentals = safe educational framing");
+      add("Crypto Knowledge for Beginners",   92, "Knowledge framing is low-risk for moderation");
+      add("How Crypto Actually Works",        91, "Actually — conversational hook for organic CTR");
+      add("Blockchain for Beginners",         91, "Blockchain keyword for technically minded audiences");
+      add("Crypto Course — No Hype",          90, "No hype — differentiator for jaded searchers");
+      if (cryptoCityEn) add(fit(`Crypto Course in ${cryptoCityEn}`), 97, "Crypto course + city — local search match");
+      if (cryptoCityEn) add(fit(`Learn Crypto in ${cryptoCityEn}`),  95, "Learn + city — geo-targeted education");
+    }
+
+    // ── Tier 1: Location variants ──
+    if (cityNameEn) {
+      add(fit(`${product} in ${cityNameEn}`),         95, "City + product — exact local search match");
+      add(fit(`${product} ${cityNameEn}`),            93, "Product + city (no preposition) — broader local match");
+      add(fit(`${product} Services ${cityNameEn}`),   89, "Service + city — strong local keyword combo");
+      add(fit(`Best ${product} ${cityNameEn}`),       87, "Best + product + city = quality local signal");
+    }
+    if (countryNameEn && countryNameEn !== cityNameEn) {
+      add(fit(`${product} in ${countryNameEn}`),      88, "Country + product — national reach");
+      if (countryCode.length <= 3) {
+        add(fit(`${product} ${countryCode}`),         84, "Product + country code — compact geo signal");
+      }
+    }
+
+    // ── Tier 2: Product modifiers ──
+    add(fit(`${product} Online`),                     87, "Online modifier boosts CTR for service businesses");
+    add(fit(`${product} Near You`),                   85, "Near you — triggers local intent algorithms");
+    add(fit(`${product} Today`),                      84, "Today urgency — drives impulse clicks");
+    add(fit(`${product} Specialists`),                83, "Specialists framing = expertise signal");
+    if (!noUnsafeModifiers) {
+      add(fit(`${product} With Guarantee`),           82, "Guarantee removes the purchase objection");
+    }
+    add(fit(`Trusted ${product}`),                    81, "Trusted = social proof framing");
+    add(fit(`Fast ${product}`),                       80, "Fast = urgency + quality signal");
+    add(fit(`Professional ${product}`),               79, "Professional framing boosts perceived quality");
+
+    // ── Tier 3: Action + product ──
+    add(fit(`Book ${product} Online`),                83, "Book CTA is low-friction for service businesses");
+    add(fit(`Get ${product} Quote`),                  82, "Quote CTA — matches high-purchase-intent search");
+    add(fit(`Find ${product} Now`),                   81, "Find + now = local intent + urgency");
+    add(fit(`Compare ${product} Options`),            80, "Comparison frame for consideration-phase buyers");
+
+    if (aud) {
+      add(fit(`${product} ${aud}`),                   88, "Product + audience — high ad relevance score");
+    }
+
+    if (isCourse) {
+      add(fit(`Enroll: ${product}`),                  90, "Enroll CTA is #1 for online education ads");
+      add(fit(`${product} — Start Today`),            88, "Immediacy in EdTech = strong conversion hook");
+    }
+    if (sensitive === "medical") {
+      add(fit(`Book a Specialist Online`),            88, "Specialist framing is safer than medical promises");
+      add(fit(`${product}: Book Online`),             86, "Direct booking CTA for medical services");
+    }
+    if (sensitive === "legal") {
+      add(fit(`Ask a Legal Question`),                88, "Question framing avoids unauthorized legal advice");
+    }
+    if (sensitive === "finance" || sensitive === "crypto") {
+      add(fit(`Understand the Risks First`),          85, "Risk mention satisfies Google's financial policy");
+      add(fit(`${product}: Learn the Basics`),        83, "Educational framing reduces moderation risk");
+    }
+
+    // ── Generic fillers ──
+    const generics: [string, number, string][] = [
+      ["Get a Free Consultation",        75, "Free consultation reduces conversion friction"],
+      ["Compare Options Before Buying",  74, "Comparison frame for research-phase search intent"],
       ["Learn More Before You Choose",   73, "Educational tone builds trust before the ask"],
-      ["Simple Start — No Pressure",     72, "Low-pressure framing lowers bounce rate"],
       ["Request Information Today",      72, "Soft CTA with urgency signal — high CTR for leads"],
-      ["Get Clear Details Online",       71, "Clarity promise works for any complex product"],
-      ["Book a Consultation Online",     70, "Booking CTA is safe and conversion-friendly"],
-      ["Explore Your Options Today",     69, "Exploration verb suits awareness-stage searchers"],
-      ["Start With Basic Information",   68, "Low-commitment opener — great for new audiences"],
-      ["Official Information Online",    67, "Trust signal — effective for regulated industries"],
-      ["Choose the Right Solution",      66, "Solution framing appeals to problem-aware buyers"],
-      ["Get Advice — No Obligation",     65, "Zero-obligation reassurance drives hesitant clickers"],
-      ["See What Works for You",         65, "Personalization language increases perceived relevance"],
-      ["Take the First Step Today",      64, "Urgency + low commitment = reliable CTR booster"],
+      ["Book a Consultation Online",     71, "Booking CTA — safe and conversion-friendly"],
+      ["Find the Right Option",          70, "Discovery framing for consideration-phase buyers"],
     ];
-    for (const [text, score, tip] of universals) add(text, score, tip);
-  }
-
-  // Sensitive-category safe overrides (inject extra caution)
-  if (sensitive === "finance" || sensitive === "crypto") {
-    if (lang === "ru") {
-      add("Узнайте условия и риски",   85, "Упоминание рисков соответствует политике Google Ads для финансовых тем");
-      add("Получите вводный материал", 83, "Образовательный фрейм снижает риск отклонения модерации");
-    } else {
-      add("Understand the Risks First", 85, "Risk mention satisfies Google's financial product policy");
-      add("Educational Materials First", 83, "Framing as education reduces moderation rejection risk");
-    }
-  }
-  if (sensitive === "medical") {
-    if (lang === "ru") {
-      add("Запись к специалисту онлайн", 88, "«Специалист» вместо «врач» — нейтральнее для модерации");
-      add("Получите профессиональный совет", 82, "Совет, а не лечение — безопасный фрейм для медтематики");
-    } else {
-      add("Book a Specialist Online", 88, "Specialist framing is safer than medical promises");
-      add("Get Professional Advice",  82, "Advice over treatment — compliant with medical ad policies");
-    }
-  }
-  if (sensitive === "legal") {
-    if (lang === "ru") add("Задайте вопрос юристу", 88, "«Вопрос» снимает правовую ответственность за совет");
-    else               add("Ask a Legal Question",    88, "Question framing avoids unauthorized legal advice claims");
+    for (const [text, score, tip] of generics) add(text, score, tip);
   }
 
   // Deduplicate by text and return sorted by score
