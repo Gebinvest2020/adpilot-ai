@@ -7,6 +7,7 @@ import {
   Zap, Copy, Download, Check, Globe, Target, Sparkles,
   AlertTriangle, ChevronDown, ArrowRight, ExternalLink,
   RotateCcw, Shield, Info, Megaphone, TrendingUp, Search, Brain,
+  Monitor, Smartphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { RSAFullResult, RSAHeadline, RSADescription } from "@/lib/mock-data";
@@ -393,7 +394,7 @@ function CopyBtn({
   );
 }
 
-// Google SERP-style ad preview
+// Google SERP-style ad preview with desktop/mobile toggle
 function AdPreview({
   headlines,
   descriptions,
@@ -405,36 +406,131 @@ function AdPreview({
   niche: string;
   previewTitle: string;
 }) {
+  const [view, setView] = useState<"desktop" | "mobile">("desktop");
+
   const h1 = headlines[0]?.text ?? "Headline One";
   const h2 = headlines[1]?.text ?? "Headline Two";
   const h3 = headlines[2]?.text ?? "Headline Three";
-  const desc = descriptions[0]?.text ?? "";
-  const slug = niche.toLowerCase().replace(/\s+/g, "").slice(0, 18) || "yourbusiness";
+  const desc  = descriptions[0]?.text ?? "";
+  const desc2 = descriptions[1]?.text ?? "";
+  const slug = niche.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 18) || "yourbusiness";
 
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-white/[0.015] p-5">
-      <p className="text-[10px] font-bold text-white/25 uppercase tracking-widest mb-4 flex items-center gap-2">
-        <ExternalLink className="w-3 h-3" />
-        {previewTitle}
-      </p>
-      <div className="rounded-xl bg-[#18181f] border border-white/[0.06] p-4 space-y-1.5">
-        {/* domain row */}
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex-shrink-0" />
-          <div>
-            <p className="text-[11px] text-white/50 leading-none">{slug}.com</p>
-            <p className="text-[10px] text-white/25">{slug}.com › campaigns › landing</p>
-          </div>
-          <span className="ml-auto text-[9px] border border-white/20 text-white/30 px-1.5 py-0.5 rounded font-medium">
-            Sponsored
-          </span>
-        </div>
-        {/* headline link */}
-        <p className="text-[17px] font-medium text-[#8ab4f8] leading-snug cursor-pointer hover:underline">
-          {h1} | {h2} | {h3}
+    <div className="rounded-2xl border border-white/[0.07] bg-white/[0.015] overflow-hidden">
+      {/* Header */}
+      <div className="px-5 py-3 border-b border-white/[0.06] flex items-center justify-between">
+        <p className="text-[10px] font-bold text-white/25 uppercase tracking-widest flex items-center gap-2">
+          <ExternalLink className="w-3 h-3" />
+          {previewTitle}
         </p>
-        {/* description */}
-        <p className="text-sm text-white/45 leading-relaxed">{desc}</p>
+        {/* View toggle */}
+        <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-white/[0.04] border border-white/[0.06]">
+          <button
+            onClick={() => setView("desktop")}
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold transition-all",
+              view === "desktop"
+                ? "bg-white/[0.08] text-white/70"
+                : "text-white/25 hover:text-white/45"
+            )}
+          >
+            <Monitor className="w-3 h-3" />
+            Desktop
+          </button>
+          <button
+            onClick={() => setView("mobile")}
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold transition-all",
+              view === "mobile"
+                ? "bg-white/[0.08] text-white/70"
+                : "text-white/25 hover:text-white/45"
+            )}
+          >
+            <Smartphone className="w-3 h-3" />
+            Mobile
+          </button>
+        </div>
+      </div>
+
+      <div className="p-5">
+        <AnimatePresence mode="wait">
+          {view === "desktop" ? (
+            <motion.div
+              key="desktop"
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 8 }}
+              transition={{ duration: 0.18 }}
+              className="rounded-xl bg-[#18181f] border border-white/[0.06] p-4 space-y-1.5"
+            >
+              {/* Domain row */}
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex-shrink-0" />
+                <div>
+                  <p className="text-[11px] text-white/50 leading-none">{slug}.com</p>
+                  <p className="text-[10px] text-white/25">{slug}.com › ads › landing-page</p>
+                </div>
+                <span className="ml-auto text-[9px] border border-white/20 text-white/30 px-1.5 py-0.5 rounded font-medium">
+                  Sponsored
+                </span>
+              </div>
+              {/* Headline */}
+              <p className="text-[17px] font-medium text-[#8ab4f8] leading-snug cursor-pointer hover:underline">
+                {h1} | {h2} | {h3}
+              </p>
+              {/* Description */}
+              <p className="text-sm text-white/45 leading-relaxed">{desc}</p>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="mobile"
+              initial={{ opacity: 0, x: 8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -8 }}
+              transition={{ duration: 0.18 }}
+              className="mx-auto max-w-[320px]"
+            >
+              {/* Mobile SERP chrome */}
+              <div className="rounded-2xl bg-[#18181f] border border-white/[0.06] overflow-hidden">
+                {/* Search bar simulation */}
+                <div className="px-3 py-2.5 border-b border-white/[0.05] flex items-center gap-2">
+                  <div className="flex-1 h-7 rounded-full bg-white/[0.06] border border-white/[0.07] flex items-center px-3 gap-2">
+                    <Search className="w-2.5 h-2.5 text-white/20 flex-shrink-0" />
+                    <span className="text-[10px] text-white/20 truncate">{niche.slice(0, 24)}</span>
+                  </div>
+                </div>
+                {/* Ad card */}
+                <div className="p-3.5 space-y-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-[10px] text-white/45 leading-none truncate">{slug}.com</p>
+                    </div>
+                    <span className="ml-auto text-[8px] border border-white/15 text-white/25 px-1 py-0.5 rounded font-medium flex-shrink-0">
+                      Sponsored
+                    </span>
+                  </div>
+                  <p className="text-[15px] font-medium text-[#8ab4f8] leading-snug">
+                    {h1} | {h2}
+                  </p>
+                  <p className="text-xs text-white/40 leading-relaxed line-clamp-2">
+                    {desc}
+                  </p>
+                  {/* Sitelinks simulation */}
+                  {desc2 && (
+                    <div className="pt-1.5 flex gap-2 flex-wrap">
+                      {[h3].map((hl, i) => (
+                        <span key={i} className="text-[10px] text-[#8ab4f8] border-b border-[#8ab4f8]/30 cursor-pointer hover:border-[#8ab4f8]/60">
+                          {hl}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
@@ -824,7 +920,7 @@ export default function RSAGeneratorPage() {
     : [];
 
   return (
-    <div className="p-6 max-w-[1400px] mx-auto">
+    <div className="p-4 sm:p-6 max-w-[1400px] mx-auto">
 
       {/* ── Page header ─────────────────────────────────────────────────── */}
       <motion.div

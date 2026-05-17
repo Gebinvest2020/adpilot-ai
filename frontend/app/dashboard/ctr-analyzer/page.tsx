@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  BarChart2, Loader2, Wand2, ChevronDown, Brain, Zap, RefreshCw,
+  BarChart2, Wand2, ChevronDown, Brain, Zap, RefreshCw, Loader2,
+  Check, Sparkles, Target, TrendingUp,
 } from "lucide-react";
 import { analyzeCTR } from "@/lib/fake-ai/ctr-analyzer";
 import type { CTRAnalysisResult, CTRBreakdownKey } from "@/lib/mock-data";
@@ -195,17 +196,19 @@ export default function CTRAnalyzerPage() {
   const breakdownName = (key: CTRBreakdownKey): string => c.breakdownNames[key];
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
         <div className="flex items-center gap-3 mb-1">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 flex-shrink-0">
             <BarChart2 className="w-4 h-4 text-white" />
           </div>
-          <h1 className="text-2xl font-black text-white">{c.pageTitle}</h1>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-black text-white leading-none">{c.pageTitle}</h1>
+            <p className="text-sm text-white/40 mt-0.5">{c.pageSubtitle}</p>
+          </div>
         </div>
-        <p className="text-sm text-white/40 ml-12">{c.pageSubtitle}</p>
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -296,20 +299,140 @@ export default function CTRAnalyzerPage() {
             {loading && (
               <motion.div
                 key="loading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-8 space-y-6"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.3 }}
+                className="rounded-2xl border border-blue-500/[0.12] bg-white/[0.02] overflow-hidden"
+                style={{ boxShadow: "0 0 60px -12px rgba(59,130,246,0.15)" }}
               >
-                <div className="w-44 h-24 rounded-xl bg-white/[0.04] mx-auto animate-pulse" />
-                <div className="space-y-4">
-                  {[1, 2, 3, 4, 5].map(i => (
-                    <div key={i} className="space-y-1.5">
-                      <div className="h-3 bg-white/[0.04] rounded-full w-40 animate-pulse" />
-                      <div className="h-2 bg-white/[0.03] rounded-full animate-pulse" />
+                <div className="h-px w-full bg-gradient-to-r from-transparent via-blue-500/40 to-transparent" />
+                <div className="p-7 space-y-7">
+                  {/* Orb + title */}
+                  <div className="flex items-center gap-4">
+                    <div className="relative flex-shrink-0">
+                      <motion.div
+                        className="absolute inset-0 rounded-full bg-blue-500/10"
+                        animate={{ scale: [1, 1.5, 1], opacity: [0.6, 0, 0.6] }}
+                        transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                        style={{ margin: "-10px" }}
+                      />
+                      <motion.div
+                        className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 via-indigo-500 to-violet-600 flex items-center justify-center shadow-lg"
+                        animate={{ boxShadow: [
+                          "0 0 20px 4px rgba(59,130,246,0.35)",
+                          "0 0 32px 8px rgba(99,102,241,0.45)",
+                          "0 0 20px 4px rgba(59,130,246,0.35)",
+                        ]}}
+                        transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                      >
+                        <motion.div
+                          className="absolute inset-0 rounded-full border-2 border-transparent"
+                          style={{ borderTopColor: "rgba(255,255,255,0.35)" }}
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1.6, repeat: Infinity, ease: "linear" }}
+                        />
+                        <BarChart2 className="w-5 h-5 text-white" />
+                      </motion.div>
                     </div>
-                  ))}
+                    <div className="flex-1">
+                      <motion.p
+                        className="text-base font-bold text-white"
+                        animate={{ opacity: [0.8, 1, 0.8] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      >
+                        {c.analyzingBtn}
+                      </motion.p>
+                      <p className="text-xs text-blue-400/70 mt-0.5 font-medium">OpenAI GPT-4o mini</p>
+                    </div>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full rounded-full relative overflow-hidden"
+                      style={{ background: "linear-gradient(90deg, #3b82f6, #6366f1, #8b5cf6)" }}
+                      initial={{ width: "5%" }}
+                      animate={{ width: "85%" }}
+                      transition={{ duration: 2.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+                    >
+                      <motion.div
+                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent skew-x-12"
+                        animate={{ x: ["-100%", "200%"] }}
+                        transition={{ duration: 1.2, repeat: Infinity, ease: "linear", repeatDelay: 0.4 }}
+                      />
+                    </motion.div>
+                  </div>
+
+                  {/* Steps */}
+                  <div className="space-y-2.5">
+                    {[
+                      { label: "Parsing ad copy structure", delay: 0 },
+                      { label: "Evaluating headline strength", delay: 0.5 },
+                      { label: "Analyzing CTA effectiveness", delay: 1.0 },
+                      { label: "Scoring keyword relevance", delay: 1.5 },
+                      { label: "Generating recommendations", delay: 2.0 },
+                    ].map(({ label, delay }, i) => (
+                      <motion.div
+                        key={label}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: delay * 0.4, duration: 0.3 }}
+                        className="flex items-center gap-3"
+                      >
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: delay * 0.4 + 0.1, type: "spring" }}
+                          className="w-5 h-5 rounded-full bg-blue-500/15 border border-blue-500/25 flex items-center justify-center flex-shrink-0"
+                        >
+                          <motion.div
+                            animate={{ opacity: [1, 0.4, 1] }}
+                            transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                            className="w-1.5 h-1.5 rounded-full bg-blue-400"
+                          />
+                        </motion.div>
+                        <motion.span
+                          animate={{ opacity: [0.5, 1, 0.5] }}
+                          transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
+                          className="text-sm text-white/50"
+                        >
+                          {label}
+                        </motion.span>
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  {/* Skeleton preview */}
+                  <div className="space-y-3">
+                    <div className="w-44 h-20 rounded-xl bg-white/[0.03] mx-auto relative overflow-hidden">
+                      <motion.div
+                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent"
+                        animate={{ x: ["-100%", "200%"] }}
+                        transition={{ duration: 1.6, repeat: Infinity, ease: "linear" }}
+                      />
+                    </div>
+                    {[90, 70, 80, 60, 75].map((w, i) => (
+                      <div key={i} className="space-y-1">
+                        <div className="h-2.5 bg-white/[0.03] rounded-full relative overflow-hidden" style={{ width: `${w * 0.5}%` }}>
+                          <motion.div
+                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.06] to-transparent"
+                            animate={{ x: ["-100%", "200%"] }}
+                            transition={{ duration: 1.6, repeat: Infinity, ease: "linear", delay: i * 0.15 }}
+                          />
+                        </div>
+                        <div className="h-2 bg-white/[0.025] rounded-full relative overflow-hidden">
+                          <motion.div
+                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.04] to-transparent"
+                            animate={{ x: ["-100%", "200%"] }}
+                            transition={{ duration: 1.6, repeat: Infinity, ease: "linear", delay: i * 0.15 + 0.3 }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
+                <div className="h-px w-full bg-gradient-to-r from-transparent via-violet-500/20 to-transparent" />
               </motion.div>
             )}
 
@@ -317,12 +440,35 @@ export default function CTRAnalyzerPage() {
             {!loading && !result && (
               <motion.div
                 key="empty"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.01] p-16 text-center"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="rounded-2xl border border-dashed border-white/[0.07] bg-white/[0.01] flex flex-col items-center justify-center py-20 px-8 text-center"
               >
-                <BarChart2 className="w-10 h-10 text-white/10 mx-auto mb-4" />
-                <p className="text-white/30 text-sm font-medium">{c.emptyMsg}</p>
+                <div className="relative mb-6">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border border-blue-500/10 flex items-center justify-center">
+                    <BarChart2 className="w-7 h-7 text-blue-500/30" />
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-blue-500/20 flex items-center justify-center">
+                    <Sparkles className="w-2.5 h-2.5 text-blue-400/60" />
+                  </div>
+                </div>
+                <p className="text-white/50 font-semibold text-base mb-2">{c.emptyMsg}</p>
+                <p className="text-white/22 text-sm max-w-sm leading-relaxed mb-8">
+                  Paste your ad copy and get AI-powered CTR scoring across 5 dimensions with actionable recommendations.
+                </p>
+                <div className="flex flex-wrap justify-center gap-x-5 gap-y-2">
+                  {[
+                    { icon: BarChart2, label: "5-dimension scoring" },
+                    { icon: Target, label: "CTR optimization" },
+                    { icon: TrendingUp, label: "Improved headlines" },
+                    { icon: Brain, label: "AI recommendations" },
+                  ].map(({ icon: Icon, label }) => (
+                    <div key={label} className="flex items-center gap-1.5 text-xs text-white/18">
+                      <Icon className="w-3 h-3 text-blue-500/40" />
+                      {label}
+                    </div>
+                  ))}
+                </div>
               </motion.div>
             )}
 
@@ -368,22 +514,30 @@ export default function CTRAnalyzerPage() {
                 </div>
 
                 {/* Recommendations */}
-                <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5 space-y-3">
-                  <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">{c.recommendationsLabel}</p>
-                  <ul className="space-y-3">
+                <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] overflow-hidden">
+                  <div className="px-5 py-3.5 border-b border-white/[0.06] flex items-center gap-2">
+                    <Brain className="w-3.5 h-3.5 text-indigo-400" />
+                    <p className="text-[10px] font-bold text-white/35 uppercase tracking-widest">{c.recommendationsLabel}</p>
+                    <span className="ml-auto text-[10px] font-bold text-indigo-400/60 bg-indigo-500/8 px-2 py-0.5 rounded-full">
+                      {result.recommendations.length} tips
+                    </span>
+                  </div>
+                  <div className="p-4 space-y-2.5">
                     {result.recommendations.map((rec, i) => (
-                      <motion.li
+                      <motion.div
                         key={i}
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.6 + i * 0.07 }}
-                        className="flex items-start gap-2.5 text-sm text-white/55 leading-relaxed"
+                        className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-white/[0.08] hover:bg-white/[0.03] transition-all group"
                       >
-                        <span className="text-indigo-400 font-bold flex-shrink-0 mt-0.5">{i + 1}.</span>
-                        {rec}
-                      </motion.li>
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-indigo-500/15 border border-indigo-500/20 flex items-center justify-center text-[9px] font-black text-indigo-400">
+                          {i + 1}
+                        </span>
+                        <p className="text-sm text-white/55 leading-relaxed group-hover:text-white/70 transition-colors">{rec}</p>
+                      </motion.div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
 
                 {/* Improve button */}

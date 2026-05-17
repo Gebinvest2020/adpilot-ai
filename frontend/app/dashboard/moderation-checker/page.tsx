@@ -412,16 +412,18 @@ export default function ModerationCheckerPage() {
   }[cat]);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
       {/* ── Page header ────────────────────────────────────────────────────── */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
         <div className="flex items-center gap-3 mb-1">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 flex-shrink-0">
             <Shield className="w-4 h-4 text-white" />
           </div>
-          <h1 className="text-2xl font-black text-white">{m.pageTitle}</h1>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-black text-white leading-none">{m.pageTitle}</h1>
+            <p className="text-sm text-white/40 mt-0.5">{m.pageSubtitle}</p>
+          </div>
         </div>
-        <p className="text-sm text-white/40 ml-12">{m.pageSubtitle}</p>
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">

@@ -18,8 +18,8 @@ export default function DashboardLayout({
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top header */}
         <header
-          className="h-14 flex-shrink-0 flex items-center justify-between px-6 border-b border-white/[0.06]"
-          style={{ background: '#0a0a10' }}
+          className="h-14 flex-shrink-0 flex items-center justify-between px-6 border-b border-white/[0.06] backdrop-blur-sm"
+          style={{ background: 'rgba(10,10,16,0.85)' }}
         >
           {/* Search */}
           <div className="flex items-center gap-3 flex-1 max-w-sm">

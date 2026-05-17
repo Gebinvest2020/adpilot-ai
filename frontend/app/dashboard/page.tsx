@@ -87,14 +87,17 @@ export default function DashboardPage() {
 
       {/* Quick actions */}
       <div>
-        <motion.h2
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="text-sm font-semibold text-white/40 uppercase tracking-widest mb-4"
+          className="flex items-center justify-between mb-4"
         >
-          {t.dashboard.quickActionsTitle}
-        </motion.h2>
+          <h2 className="text-[10px] font-bold text-white/30 uppercase tracking-widest">
+            {t.dashboard.quickActionsTitle}
+          </h2>
+          <span className="text-[10px] text-white/20">3 AI tools</span>
+        </motion.div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {quickActions.map((action, i) => {
             const Icon = action.icon;
@@ -108,19 +111,25 @@ export default function DashboardPage() {
               >
                 <Link
                   href={action.href}
-                  className={`block rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5 hover:border-white/[0.12] hover:bg-white/[0.04] transition-all duration-300 hover:shadow-xl ${action.glow} group`}
+                  className={`relative block rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5 hover:border-white/[0.12] hover:bg-white/[0.04] transition-all duration-300 hover:shadow-xl ${action.glow} group overflow-hidden`}
                 >
+                  {/* Subtle gradient bg on hover */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${action.gradient} opacity-0 group-hover:opacity-[0.04] transition-opacity duration-500 pointer-events-none rounded-2xl`} />
+                  {/* Top accent */}
+                  <div className={`absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-white/[0.12] to-transparent group-hover:via-white/20 transition-all duration-300`} />
+
                   <div
                     className={`w-10 h-10 rounded-xl bg-gradient-to-br ${action.gradient} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}
                   >
                     <Icon className="w-5 h-5 text-white" />
                   </div>
-                  <h3 className="text-sm font-bold text-white mb-1">{action.title}</h3>
-                  <p className="text-xs text-white/40 leading-relaxed mb-3">
+                  <h3 className="text-sm font-bold text-white mb-1.5">{action.title}</h3>
+                  <p className="text-xs text-white/38 leading-relaxed mb-4">
                     {action.description}
                   </p>
-                  <div className="flex items-center gap-1 text-xs text-indigo-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                    {t.dashboard.openTool} <ArrowRight className="w-3 h-3" />
+                  <div className="flex items-center gap-1.5 text-xs text-white/25 group-hover:text-indigo-400 font-semibold transition-colors duration-200">
+                    {t.dashboard.openTool}
+                    <ArrowRight className="w-3 h-3 translate-x-0 group-hover:translate-x-1 transition-transform duration-200" />
                   </div>
                 </Link>
               </motion.div>
@@ -130,13 +139,9 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts + table */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-1">
-          <PerformanceChart />
-        </div>
-        <div className="lg:col-span-2">
-          <RecentCampaigns />
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4 items-start">
+        <PerformanceChart />
+        <RecentCampaigns />
       </div>
     </div>
   );
