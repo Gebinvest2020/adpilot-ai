@@ -892,12 +892,14 @@ export default function RSAGeneratorPage() {
     setResults(result);
     setLoading(false);
 
+    // Show generation result toast first
+    toast("success", `Generated ${result.headlines.length} headlines`);
+
     // Guard: only save if auth has hydrated and user is present
     if (!isLoaded || !user.id) {
       console.error("[RSA] saveGeneration skipped — auth not ready", { isLoaded, userId: user.id });
-      toast("error", "Session not ready — please try again in a moment");
+      toast("error", "Session not ready — please refresh and try again");
     } else {
-      // Persist to Supabase — userId from context, no auth call inside saveGeneration
       const savedId = await saveGeneration(
         "rsa_generations",
         user.id,
@@ -911,15 +913,15 @@ export default function RSAGeneratorPage() {
         result as unknown as Record<string, unknown>
       );
 
-      if (!savedId) {
+      if (savedId) {
+        toast("info", "Saved to history");
+      } else {
         toast("error", "History save failed — open DevTools Console for details");
       }
     }
 
     // Trigger HistoryPanel to refetch from Supabase
     setHistoryToken((n) => n + 1);
-
-    toast("success", `Generated ${result.headlines.length} headlines`);
   };
 
   const handleCopyAll = () => {

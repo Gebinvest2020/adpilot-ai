@@ -402,10 +402,16 @@ export default function ModerationCheckerPage() {
     setResult(res);
     setLoading(false);
 
+    // Show result toast first
+    toast(
+      res.overallScore >= 75 ? "success" : res.overallScore >= 45 ? "warning" : "error",
+      `Safety score: ${res.overallScore}/100 — ${res.flags.length} issue${res.flags.length === 1 ? "" : "s"}`
+    );
+
     // Guard: only save if auth has hydrated
     if (!isLoaded || !user.id) {
       console.error("[Moderation] saveGeneration skipped — auth not ready", { isLoaded, userId: user.id });
-      toast("error", "Session not ready — please try again in a moment");
+      toast("error", "Session not ready — please refresh and try again");
     } else {
       const savedId = await saveGeneration(
         "moderation_checks",
@@ -413,16 +419,13 @@ export default function ModerationCheckerPage() {
         { adCopy, industry, language: locale === "ru" ? "Russian" : "English" },
         res as unknown as Record<string, unknown>
       );
-      if (!savedId) {
+      if (savedId) {
+        toast("info", "Saved to history");
+      } else {
         toast("error", "History save failed — open DevTools Console for details");
       }
     }
     setHistoryToken((n) => n + 1);
-
-    toast(
-      res.overallScore >= 75 ? "success" : res.overallScore >= 45 ? "warning" : "error",
-      `Safety score: ${res.overallScore}/100 — ${res.flags.length} issue${res.flags.length === 1 ? "" : "s"}`
-    );
   };
 
   const handleReopen = (row: HistoryRow) => {

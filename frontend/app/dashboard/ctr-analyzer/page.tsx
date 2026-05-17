@@ -195,10 +195,13 @@ export default function CTRAnalyzerPage() {
     setResult(res);
     setLoading(false);
 
+    // Show result toast first
+    toast("success", `CTR score: ${res.overallScore}/100`);
+
     // Guard: only save if auth has hydrated
     if (!isLoaded || !user.id) {
       console.error("[CTR] saveGeneration skipped — auth not ready", { isLoaded, userId: user.id });
-      toast("error", "Session not ready — please try again in a moment");
+      toast("error", "Session not ready — please refresh and try again");
     } else {
       const savedId = await saveGeneration(
         "ctr_analyses",
@@ -206,13 +209,13 @@ export default function CTRAnalyzerPage() {
         { adText, keywords, industry, language },
         res as unknown as Record<string, unknown>
       );
-      if (!savedId) {
+      if (savedId) {
+        toast("info", "Saved to history");
+      } else {
         toast("error", "History save failed — open DevTools Console for details");
       }
     }
     setHistoryToken((n) => n + 1);
-
-    toast("success", `CTR score: ${res.overallScore}/100`);
   };
 
   const handleReopen = (row: HistoryRow) => {
