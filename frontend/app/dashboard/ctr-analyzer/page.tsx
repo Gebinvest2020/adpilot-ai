@@ -10,8 +10,7 @@ import { analyzeCTR } from "@/lib/fake-ai/ctr-analyzer";
 import type { CTRAnalysisResult, CTRBreakdownKey } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { useT, useLocale } from "@/lib/i18n";
-import { addHistoryItem, type HistoryItem } from "@/lib/history";
-import { saveGeneration } from "@/lib/supabase/db";
+import { saveGeneration, type HistoryRow } from "@/lib/supabase/db";
 import { exportCTRTxt, exportCTRJson } from "@/lib/export";
 import ExportMenu from "@/components/shared/ExportMenu";
 import HistoryPanel from "@/components/shared/HistoryPanel";
@@ -194,27 +193,22 @@ export default function CTRAnalyzerPage() {
     setResult(res);
     setLoading(false);
 
-    // Save to localStorage (drives the inline HistoryPanel)
-    addHistoryItem({
-      type: "ctr",
-      preview: adText.split("\n")[0].slice(0, 60),
-      score: res.overallScore,
-      result: res,
-    });
-    setHistoryToken((n) => n + 1);
-
-    // Also persist to Supabase for cross-device history (fire-and-forget)
-    saveGeneration(
+    // Persist to Supabase
+    const saved = await saveGeneration(
       "ctr_analyses",
       { adText, keywords, industry, language },
       res as unknown as Record<string, unknown>
-    ).catch(console.error);
+    );
+    if (!saved) {
+      toast("error", "Failed to save to history — check console for details");
+    }
+    setHistoryToken((n) => n + 1);
 
     toast("success", `CTR score: ${res.overallScore}/100`);
   };
 
-  const handleReopen = (item: HistoryItem) => {
-    setResult(item.result as CTRAnalysisResult);
+  const handleReopen = (row: HistoryRow) => {
+    setResult(row.output as unknown as CTRAnalysisResult);
     setShowImproved(false);
     toast("info", "Loaded from history");
   };
@@ -335,7 +329,7 @@ export default function CTRAnalyzerPage() {
 
           {/* History panel */}
           <HistoryPanel
-            type="ctr"
+            table="ctr_analyses"
             refreshToken={historyToken}
             onReopen={handleReopen}
           />

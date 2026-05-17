@@ -53,7 +53,10 @@ export async function saveGeneration(
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return null;
+    if (!user) {
+      console.error(`[db] saveGeneration(${table}): no authenticated user — insert skipped`);
+      return null;
+    }
 
     const { data, error } = await supabase
       .from(table)
@@ -62,13 +65,13 @@ export async function saveGeneration(
       .single();
 
     if (error) {
-      console.warn(`[db] saveGeneration(${table}):`, error.message);
+      console.error(`[db] saveGeneration(${table}) INSERT failed:`, error);
       return null;
     }
 
     return (data as { id: string }).id;
   } catch (err) {
-    console.warn("[db] saveGeneration unexpected error:", err);
+    console.error("[db] saveGeneration unexpected error:", err);
     return null;
   }
 }
