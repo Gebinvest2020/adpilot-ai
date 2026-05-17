@@ -11,7 +11,8 @@ import { cn } from "@/lib/utils";
 import { useT, useLocale } from "@/lib/i18n";
 import { getUsageStats, getHistory, type UsageStats } from "@/lib/history";
 import { useToast } from "@/lib/toast";
-import { loadUser, saveUser, loadSettings, saveSettings } from "@/lib/storage";
+import { loadSettings, saveSettings, getInitials } from "@/lib/storage";
+import { useUser } from "@/hooks/useUser";
 
 type Section = "profile" | "api" | "notifications" | "billing" | "privacy";
 
@@ -240,6 +241,7 @@ export default function SettingsPage() {
   const t = useT();
   const { locale, setLocale } = useLocale();
   const { toast } = useToast();
+  const { user, updateUser, isLoaded } = useUser();
   const lbl = LABELS[locale] ?? LABELS.en;
 
   const [section, setSection] = useState<Section>("profile");
@@ -252,32 +254,28 @@ export default function SettingsPage() {
     totalGenerations: 0, rsaCount: 0, ctrCount: 0, moderationCount: 0,
     avgCtrScore: 0, avgSafetyScore: 0, thisWeek: 0,
   });
+  // Initialize profile from context; will sync once isLoaded becomes true
   const [profile, setProfile] = useState({
-    name: "Demo User", email: "demo@adpilot.ai", company: "", role: "",
+    name: user.name, email: user.email, company: user.company, role: user.role,
   });
 
-  // ── Load from localStorage on mount ────────────────────────────────────────
+  // ── Hydrate form from context once client-side load completes ──────────────
   useEffect(() => {
-    const user = loadUser();
-    setProfile({
-      name:    user.name,
-      email:   user.email,
-      company: user.company,
-      role:    user.role,
-    });
+    if (!isLoaded) return;
+    setProfile({ name: user.name, email: user.email, company: user.company, role: user.role });
 
     const settings = loadSettings();
     setNotifs(settings.notifications);
-    // Sync locale from storage if different from current
     if (settings.locale !== locale) setLocale(settings.locale);
 
     setUsageStats(getUsageStats());
+  // Only run when isLoaded flips to true — not on every user change
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isLoaded]);
 
-  // ── Save profile + settings to localStorage ────────────────────────────────
+  // ── Save profile + settings — updates context instantly ───────────────────
   const handleSave = () => {
-    const ok = saveUser({
+    const ok = updateUser({
       name:    profile.name,
       email:   profile.email,
       company: profile.company,
@@ -287,7 +285,7 @@ export default function SettingsPage() {
 
     if (ok) {
       setSaved(true);
-      toast("success", "Profile saved — changes will persist after refresh");
+      toast("success", "Profile saved — sidebar and topbar updated instantly");
       setTimeout(() => setSaved(false), 2500);
     } else {
       toast("error", "Failed to save — localStorage may be blocked");
@@ -370,7 +368,7 @@ export default function SettingsPage() {
                 <div className="p-6 space-y-5">
                   <div className="flex items-center gap-4 pb-5 border-b border-white/[0.06]">
                     <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-lg font-black text-white flex-shrink-0">
-                      AJ
+                      {getInitials(profile.name)}
                     </div>
                     <div>
                       <p className="text-sm font-bold text-white">{profile.name}</p>

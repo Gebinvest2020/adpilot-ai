@@ -9,6 +9,7 @@ import RecentCampaigns from "@/components/dashboard/RecentCampaigns";
 import PerformanceChart from "@/components/dashboard/PerformanceChart";
 import { useT } from "@/lib/i18n";
 import { getHistory, getUsageStats, relativeTime, type HistoryItem, type UsageStats } from "@/lib/history";
+import { useUser } from "@/hooks/useUser";
 import { cn } from "@/lib/utils";
 
 // ─── Activity item ────────────────────────────────────────────────────────────
@@ -125,6 +126,7 @@ function UsageSummary({ stats }: { stats: UsageStats }) {
 
 export default function DashboardPage() {
   const t = useT();
+  const { user } = useUser();
   const [recentActivity, setRecentActivity] = useState<HistoryItem[]>([]);
   const [stats, setStats] = useState<UsageStats>({
     totalGenerations: 0,
@@ -223,7 +225,7 @@ export default function DashboardPage() {
         <h1 className="text-2xl font-black text-white">
           {greeting},{" "}
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-violet-400">
-            Alex
+            {user.name.split(" ")[0]}
           </span>{" "}
           👋
         </h1>

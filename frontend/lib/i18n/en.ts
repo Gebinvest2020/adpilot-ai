@@ -540,7 +540,7 @@ export const en: Translations = {
       "Join 10,000+ performance marketers",
     ],
     nameLabel: "Full name",
-    namePlaceholder: "Alex Johnson",
+    namePlaceholder: "Jane Smith",
     emailLabel: "Email address",
     emailPlaceholder: "you@company.com",
     passwordLabel: "Password",

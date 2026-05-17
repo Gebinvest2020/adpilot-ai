@@ -1,40 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 import {
   Zap, LayoutDashboard, Shield, BarChart2,
   Settings, ChevronLeft, ChevronRight, LogOut, User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
-import { loadUser, type StoredUser } from "@/lib/storage";
+import { useUser } from "@/hooks/useUser";
 
 export default function DashboardSidebar() {
   const t = useT();
+  const { user } = useUser();   // single source of truth — no local user state
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
-  const [user, setUser] = useState<StoredUser>({
-    name:     "Demo User",
-    email:    "demo@adpilot.ai",
-    company:  "",
-    role:     "",
-    initials: "DU",
-  });
-
-  // Read user from localStorage after hydration
-  useEffect(() => {
-    setUser(loadUser());
-  }, []);
-
-  // Re-read when the page gains focus (e.g. after settings save)
-  useEffect(() => {
-    const handleFocus = () => setUser(loadUser());
-    window.addEventListener("focus", handleFocus);
-    return () => window.removeEventListener("focus", handleFocus);
-  }, []);
 
   const navItems = [
     { label: t.sidebar.dashboard,         href: "/dashboard",                    icon: LayoutDashboard },
@@ -129,7 +111,7 @@ export default function DashboardSidebar() {
               collapsed ? "justify-center" : ""
             )}
           >
-            {/* Avatar — initials or icon */}
+            {/* Avatar — initials derived from user name */}
             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0 text-[11px] font-bold text-white">
               {user.initials || <User className="w-3.5 h-3.5" />}
             </div>
