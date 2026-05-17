@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,18 +10,38 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
+import { loadUser, type StoredUser } from "@/lib/storage";
 
 export default function DashboardSidebar() {
   const t = useT();
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
+  const [user, setUser] = useState<StoredUser>({
+    name:     "Demo User",
+    email:    "demo@adpilot.ai",
+    company:  "",
+    role:     "",
+    initials: "DU",
+  });
+
+  // Read user from localStorage after hydration
+  useEffect(() => {
+    setUser(loadUser());
+  }, []);
+
+  // Re-read when the page gains focus (e.g. after settings save)
+  useEffect(() => {
+    const handleFocus = () => setUser(loadUser());
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, []);
 
   const navItems = [
-    { label: t.sidebar.dashboard,         href: "/dashboard",                         icon: LayoutDashboard },
-    { label: t.sidebar.rsaGenerator,      href: "/dashboard/rsa-generator",           icon: Zap },
-    { label: t.sidebar.moderationChecker, href: "/dashboard/moderation-checker",      icon: Shield },
-    { label: t.sidebar.ctrAnalyzer,       href: "/dashboard/ctr-analyzer",            icon: BarChart2 },
-    { label: t.sidebar.settings,          href: "/dashboard/settings",                icon: Settings },
+    { label: t.sidebar.dashboard,         href: "/dashboard",                    icon: LayoutDashboard },
+    { label: t.sidebar.rsaGenerator,      href: "/dashboard/rsa-generator",      icon: Zap },
+    { label: t.sidebar.moderationChecker, href: "/dashboard/moderation-checker", icon: Shield },
+    { label: t.sidebar.ctrAnalyzer,       href: "/dashboard/ctr-analyzer",       icon: BarChart2 },
+    { label: t.sidebar.settings,          href: "/dashboard/settings",           icon: Settings },
   ];
 
   return (
@@ -74,9 +94,7 @@ export default function DashboardSidebar() {
                     : "text-white/50 hover:text-white hover:bg-white/[0.05]"
                 )}
               >
-                <Icon
-                  className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-indigo-400" : "")}
-                />
+                <Icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-indigo-400" : "")} />
                 <AnimatePresence>
                   {!collapsed && (
                     <motion.span
@@ -102,35 +120,40 @@ export default function DashboardSidebar() {
         })}
       </nav>
 
-      {/* User Profile */}
+      {/* User profile */}
       <div className="border-t border-white/[0.06] p-2">
-        <div
-          className={cn(
-            "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.05] transition-all cursor-pointer",
-            collapsed ? "justify-center" : ""
-          )}
-        >
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0">
-            <User className="w-3.5 h-3.5 text-white" />
-          </div>
-          <AnimatePresence>
-            {!collapsed && (
-              <motion.div
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: "auto" }}
-                exit={{ opacity: 0, width: 0 }}
-                transition={{ duration: 0.2 }}
-                className="flex-1 min-w-0 overflow-hidden"
-              >
-                <p className="text-xs font-semibold text-white/80 truncate">Alex Johnson</p>
-                <p className="text-xs text-white/40 truncate">{t.sidebar.plan}</p>
-              </motion.div>
+        <Link href="/dashboard/settings">
+          <div
+            className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.05] transition-all cursor-pointer",
+              collapsed ? "justify-center" : ""
             )}
-          </AnimatePresence>
-          {!collapsed && (
-            <LogOut className="w-3.5 h-3.5 text-white/30 hover:text-white/70 flex-shrink-0 transition-colors" />
-          )}
-        </div>
+          >
+            {/* Avatar — initials or icon */}
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0 text-[11px] font-bold text-white">
+              {user.initials || <User className="w-3.5 h-3.5" />}
+            </div>
+
+            <AnimatePresence>
+              {!collapsed && (
+                <motion.div
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: "auto" }}
+                  exit={{ opacity: 0, width: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex-1 min-w-0 overflow-hidden"
+                >
+                  <p className="text-xs font-semibold text-white/80 truncate">{user.name}</p>
+                  <p className="text-xs text-white/40 truncate">{t.sidebar.plan}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {!collapsed && (
+              <LogOut className="w-3.5 h-3.5 text-white/30 hover:text-white/70 flex-shrink-0 transition-colors" />
+            )}
+          </div>
+        </Link>
       </div>
 
       {/* Collapse toggle */}

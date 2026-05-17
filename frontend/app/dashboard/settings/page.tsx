@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useT, useLocale } from "@/lib/i18n";
 import { getUsageStats, getHistory, type UsageStats } from "@/lib/history";
 import { useToast } from "@/lib/toast";
+import { loadUser, saveUser, loadSettings, saveSettings } from "@/lib/storage";
 
 type Section = "profile" | "api" | "notifications" | "billing" | "privacy";
 
@@ -251,17 +252,46 @@ export default function SettingsPage() {
     totalGenerations: 0, rsaCount: 0, ctrCount: 0, moderationCount: 0,
     avgCtrScore: 0, avgSafetyScore: 0, thisWeek: 0,
   });
+  const [profile, setProfile] = useState({
+    name: "Demo User", email: "demo@adpilot.ai", company: "", role: "",
+  });
 
-  const [profile, setProfile] = useState({ name: "Alex Johnson", email: "alex@company.com", company: "Acme Marketing", role: "" });
-
+  // ── Load from localStorage on mount ────────────────────────────────────────
   useEffect(() => {
+    const user = loadUser();
+    setProfile({
+      name:    user.name,
+      email:   user.email,
+      company: user.company,
+      role:    user.role,
+    });
+
+    const settings = loadSettings();
+    setNotifs(settings.notifications);
+    // Sync locale from storage if different from current
+    if (settings.locale !== locale) setLocale(settings.locale);
+
     setUsageStats(getUsageStats());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Save profile + settings to localStorage ────────────────────────────────
   const handleSave = () => {
-    setSaved(true);
-    toast("success", "Profile saved");
-    setTimeout(() => setSaved(false), 2000);
+    const ok = saveUser({
+      name:    profile.name,
+      email:   profile.email,
+      company: profile.company,
+      role:    profile.role,
+    });
+    saveSettings({ locale, notifications: notifs });
+
+    if (ok) {
+      setSaved(true);
+      toast("success", "Profile saved — changes will persist after refresh");
+      setTimeout(() => setSaved(false), 2500);
+    } else {
+      toast("error", "Failed to save — localStorage may be blocked");
+    }
   };
 
   const handleExportData = () => {
@@ -366,7 +396,14 @@ export default function SettingsPage() {
                     </label>
                     <div className="flex gap-2">
                       {([["en", "English"], ["ru", "Русский"]] as const).map(([code, label]) => (
-                        <button key={code} onClick={() => setLocale(code)} className={cn("px-4 py-2 rounded-xl text-sm font-semibold border transition-all", locale === code ? "border-indigo-500/40 bg-indigo-500/10 text-indigo-300" : "border-white/[0.08] bg-white/[0.04] text-white/40 hover:text-white/70")}>
+                        <button
+                          key={code}
+                          onClick={() => {
+                            setLocale(code);
+                            saveSettings({ locale: code });
+                          }}
+                          className={cn("px-4 py-2 rounded-xl text-sm font-semibold border transition-all", locale === code ? "border-indigo-500/40 bg-indigo-500/10 text-indigo-300" : "border-white/[0.08] bg-white/[0.04] text-white/40 hover:text-white/70")}
+                        >
                           {label}
                         </button>
                       ))}

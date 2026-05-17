@@ -3,16 +3,45 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Zap, Mail, Lock, Eye, EyeOff, ArrowRight, Globe, GitBranch } from "lucide-react";
 import AnimatedBackground from "@/components/shared/AnimatedBackground";
 import { useT } from "@/lib/i18n";
+import { saveUser } from "@/lib/storage";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
+  const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState("");
+  const router = useRouter();
   const t = useT();
   const l = t.login;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !password.trim()) {
+      setError("Please fill in all fields.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    // Mock auth — derive a display name from the email address
+    setTimeout(() => {
+      const localPart = email.split("@")[0] ?? "User";
+      const name = localPart
+        .replace(/[._-]/g, " ")
+        .split(" ")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+
+      saveUser({ name, email, company: "", role: "" });
+      router.push("/dashboard");
+    }, 800);
+  };
 
   return (
     <div className="min-h-screen flex" style={{ background: '#050508' }}>
@@ -110,6 +139,7 @@ export default function LoginPage() {
           <div className="grid grid-cols-2 gap-3 mb-6">
             <motion.button
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+              onClick={() => { saveUser({ name: "Google User", email: "user@gmail.com", company: "" }); router.push("/dashboard"); }}
               className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-white/[0.1] bg-white/[0.03] hover:bg-white/[0.06] text-white/70 hover:text-white text-sm font-medium transition-all"
             >
               <Globe className="w-4 h-4" />
@@ -117,6 +147,7 @@ export default function LoginPage() {
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+              onClick={() => { saveUser({ name: "GitHub User", email: "user@github.com", company: "" }); router.push("/dashboard"); }}
               className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-white/[0.1] bg-white/[0.03] hover:bg-white/[0.06] text-white/70 hover:text-white text-sm font-medium transition-all"
             >
               <GitBranch className="w-4 h-4" />
@@ -131,7 +162,13 @@ export default function LoginPage() {
           </div>
 
           {/* Form */}
-          <form className="space-y-4">
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            {error && (
+              <div className="px-4 py-3 rounded-xl border border-red-500/20 bg-red-500/[0.06] text-sm text-red-400">
+                {error}
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-white/60 mb-1.5">{l.emailLabel}</label>
               <div className="relative">
@@ -179,10 +216,17 @@ export default function LoginPage() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               type="submit"
-              className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 transition-all mt-2"
+              disabled={loading}
+              className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 transition-all mt-2 disabled:opacity-70"
             >
-              {l.signInBtn}
-              <ArrowRight className="w-4 h-4" />
+              {loading ? (
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  {l.signInBtn}
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </motion.button>
           </form>
 

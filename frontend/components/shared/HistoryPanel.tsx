@@ -6,7 +6,7 @@ import { Clock, Trash2, ChevronDown, Zap, BarChart2, Shield, X, RotateCcw } from
 import {
   getHistoryByType,
   removeHistoryItem,
-  clearAllHistory,
+  clearHistoryByType,
   relativeTime,
   type HistoryItem,
   type HistoryType,
@@ -20,28 +20,24 @@ const TYPE_CONFIG: Record<HistoryType, {
   color: string;
   bg: string;
   border: string;
-  label: string;
 }> = {
   rsa: {
     icon: Zap,
-    color: "text-indigo-400",
-    bg: "bg-indigo-500/10",
+    color:  "text-indigo-400",
+    bg:     "bg-indigo-500/10",
     border: "border-indigo-500/20",
-    label: "RSA",
   },
   ctr: {
     icon: BarChart2,
-    color: "text-blue-400",
-    bg: "bg-blue-500/10",
+    color:  "text-blue-400",
+    bg:     "bg-blue-500/10",
     border: "border-blue-500/20",
-    label: "CTR",
   },
   moderation: {
     icon: Shield,
-    color: "text-emerald-400",
-    bg: "bg-emerald-500/10",
+    color:  "text-emerald-400",
+    bg:     "bg-emerald-500/10",
     border: "border-emerald-500/20",
-    label: "MOD",
   },
 };
 
@@ -49,24 +45,30 @@ const TYPE_CONFIG: Record<HistoryType, {
 
 interface HistoryPanelProps {
   type: HistoryType;
-  /** Called when user clicks "Reopen" on an item. Passes the saved result. */
+  /** Called when user clicks "Reopen" — passes back the saved result object. */
   onReopen: (item: HistoryItem) => void;
-  /** Refresh token — increment to force re-read of localStorage. */
+  /** Increment to trigger a re-read from localStorage (e.g. after a new save). */
   refreshToken?: number;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function HistoryPanel({ type, onReopen, refreshToken = 0 }: HistoryPanelProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen]   = useState(false);
   const [items, setItems] = useState<HistoryItem[]>([]);
-  const cfg = TYPE_CONFIG[type];
+  const cfg  = TYPE_CONFIG[type];
   const Icon = cfg.icon;
 
-  // Read from localStorage whenever open toggles or a new result is saved
+  // Re-read localStorage whenever the panel is opened or refreshToken changes
   useEffect(() => {
     setItems(getHistoryByType(type));
-  }, [type, open, refreshToken]);
+  }, [type, refreshToken]);
+
+  // Also re-read when the user opens the panel
+  const handleToggle = () => {
+    if (!open) setItems(getHistoryByType(type));
+    setOpen((v) => !v);
+  };
 
   const handleRemove = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -75,22 +77,16 @@ export default function HistoryPanel({ type, onReopen, refreshToken = 0 }: Histo
   };
 
   const handleClear = () => {
-    // Only clear items of this type
-    const all = getHistoryByType("rsa")
-      .concat(getHistoryByType("ctr"))
-      .concat(getHistoryByType("moderation"))
-      .filter((i) => i.type !== type);
-    try {
-      localStorage.setItem("adpilot_history_v1", JSON.stringify(all));
-    } catch { /* quota */ }
+    clearHistoryByType(type);   // ← uses the fixed util, not manual reconstruction
     setItems([]);
   };
 
   return (
     <div className="rounded-xl border border-white/[0.06] overflow-hidden">
+
       {/* Header — always visible */}
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={handleToggle}
         className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.03] transition-colors text-left"
       >
         <div className="flex items-center gap-2.5">
@@ -112,7 +108,7 @@ export default function HistoryPanel({ type, onReopen, refreshToken = 0 }: Histo
         </motion.div>
       </button>
 
-      {/* Body */}
+      {/* Collapsible body */}
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
@@ -123,40 +119,58 @@ export default function HistoryPanel({ type, onReopen, refreshToken = 0 }: Histo
             className="overflow-hidden"
           >
             <div className="border-t border-white/[0.05]">
+
               {items.length === 0 ? (
-                <div className="px-4 py-6 text-center">
-                  <Icon className="w-6 h-6 mx-auto mb-2 opacity-10" />
+                <div className="px-4 py-7 text-center">
+                  <Icon className="w-6 h-6 mx-auto mb-2 text-white/10" />
                   <p className="text-xs text-white/22">No history yet</p>
+                  <p className="text-[10px] text-white/15 mt-1">
+                    Results appear here after your first run
+                  </p>
                 </div>
               ) : (
-                <div className="divide-y divide-white/[0.04] max-h-64 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">
+                <div
+                  className="divide-y divide-white/[0.04] max-h-64 overflow-y-auto
+                    [&::-webkit-scrollbar]:w-1
+                    [&::-webkit-scrollbar-thumb]:bg-white/10
+                    [&::-webkit-scrollbar-thumb]:rounded-full"
+                >
                   {items.map((item) => (
                     <div
                       key={item.id}
                       className="group flex items-center gap-3 px-4 py-3 hover:bg-white/[0.025] transition-colors"
                     >
                       {/* Icon */}
-                      <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0", cfg.bg, cfg.border, "border")}>
+                      <div className={cn(
+                        "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 border",
+                        cfg.bg, cfg.border
+                      )}>
                         <Icon className={cn("w-3.5 h-3.5", cfg.color)} />
                       </div>
 
                       {/* Text */}
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs text-white/65 truncate leading-snug">{item.preview}</p>
+                        <p className="text-xs text-white/65 truncate leading-snug">
+                          {item.preview}
+                        </p>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-[9px] text-white/22 font-mono">{relativeTime(item.timestamp)}</span>
+                          <span className="text-[9px] text-white/22 font-mono">
+                            {relativeTime(item.timestamp)}
+                          </span>
                           {item.score !== undefined && (
                             <span className={cn(
-                              "text-[9px] font-bold px-1 py-0 rounded",
-                              item.score >= 80 ? "text-emerald-400" : item.score >= 60 ? "text-amber-400" : "text-red-400"
+                              "text-[9px] font-bold",
+                              item.score >= 80 ? "text-emerald-400"
+                              : item.score >= 60 ? "text-amber-400"
+                              : "text-red-400"
                             )}>
-                              {item.score}
+                              {item.score}/100
                             </span>
                           )}
                         </div>
                       </div>
 
-                      {/* Actions */}
+                      {/* Row actions — visible on hover */}
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                         <button
                           onClick={() => onReopen(item)}
@@ -178,15 +192,18 @@ export default function HistoryPanel({ type, onReopen, refreshToken = 0 }: Histo
                 </div>
               )}
 
-              {/* Footer: clear all */}
+              {/* Footer */}
               {items.length > 0 && (
-                <div className="px-4 py-2.5 border-t border-white/[0.04]">
+                <div className="px-4 py-2.5 border-t border-white/[0.04] flex items-center justify-between">
+                  <span className="text-[9px] text-white/18 font-mono">
+                    {items.length} / 20 saved
+                  </span>
                   <button
                     onClick={handleClear}
                     className="flex items-center gap-1.5 text-[10px] text-white/22 hover:text-red-400 transition-colors"
                   >
                     <Trash2 className="w-3 h-3" />
-                    Clear history
+                    Clear all
                   </button>
                 </div>
               )}
