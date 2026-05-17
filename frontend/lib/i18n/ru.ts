@@ -257,6 +257,8 @@ export const ru: Translations = {
     },
     riskLabels: { low: "НИЗКИЙ РИСК", medium: "СРЕДНИЙ РИСК", high: "ВЫСОКИЙ РИСК" },
     severityLabels: { low: "низкий", medium: "средний", high: "высокий" },
+    aiModeOpenAI: "Режим: OpenAI",
+    aiModeFallback: "Режим: Локальный",
   },
 
   pricing: {
@@ -360,31 +362,79 @@ export const ru: Translations = {
 
   moderation: {
     pageTitle: "Проверка модерации",
-    pageSubtitle: "Проверьте объявления на нарушения политики Google перед отправкой",
-    headlinesLabel: "Заголовки",
-    descriptionsLabel: "Описания",
-    addBtn: "Добавить",
-    industryLabel: "Отрасль",
-    industryPlaceholder: "Выберите отрасль...",
+    pageSubtitle: "AI-анализатор рисков политики Google Ads — выявите нарушения до блокировки аккаунта",
+
+    presetsLabel: "Примеры для теста:",
+    presets: ["Крипто трейдинг", "Инвестиции", "Медицина", "БАДы и добавки", "Финансы", "Заработок онлайн"],
+
+    adCopyLabel: "Текст объявления",
+    adCopyPlaceholder: "Вставьте заголовки, описания и CTA — по одному на строке…",
+    adCopyHint: "Заголовки ≤ 30 символов · Описания ≤ 90 символов · Принимается любой формат",
+    industryLabel: "Отрасль (необязательно)",
+    industryPlaceholder: "Выберите для лучшего контекста...",
     industries: [
-      "Технологии и SaaS", "Электронная торговля", "Финансы и страхование",
-      "Медицина и здравоохранение", "Юридические услуги", "Недвижимость", "Образование",
-      "Туризм и гостиничный бизнес", "Автомобильная отрасль", "Другое",
+      "Технологии и SaaS", "Электронная коммерция", "Финансы и страхование",
+      "Медицина и здравоохранение", "Юридические услуги", "Недвижимость",
+      "Образование и курсы", "Туризм и гостиничный бизнес", "Автомобильная отрасль",
+      "Криптовалюта и Web3", "БАДы и нутрицевтики",
+      "Трудоустройство", "Другое",
     ],
-    checkBtn: "Проверить",
-    checkingBtn: "Проверяем...",
-    emptyMsg: "Введите текст объявления и нажмите «Проверить»",
+
+    checkBtn: "Анализировать с AI",
+    checkingBtn: "Анализируем...",
+    recheckBtn: "Перепроверить",
+
+    emptyTitle: "Готово к анализу",
+    emptySubtitle: "Вставьте текст объявления слева и нажмите «Анализировать»",
+    emptyHints: [
+      "Выявляет 8 категорий нарушений политики",
+      "Предлагает безопасные замены для каждого нарушения",
+      "Работает для всех чувствительных категорий Google Ads",
+    ],
+
+    loadingTitle: "Сканируем на нарушения политики...",
+    loadingSteps: [
+      "Разбираем структуру объявления",
+      "Сканируем категории политики",
+      "Проверяем финансовые и медицинские заявления",
+      "Генерируем безопасные альтернативы",
+    ],
+
+    overallScoreLabel: "Индекс безопасности",
     riskLow: "НИЗКИЙ РИСК",
     riskMedium: "СРЕДНИЙ РИСК",
     riskHigh: "ВЫСОКИЙ РИСК",
-    complianceTitle: "Отчёт о соответствии политике",
-    issuesFoundDesc: "Найдено нарушений: {flagged}. Соответствующих элементов: {safe}.",
-    issuesLabel: "Нарушения",
-    compliantLabel: "Соответствующие элементы",
-    fixBtn: "Исправить с помощью AI",
-    highLabel: "Высокий",
-    mediumLabel: "Средний",
-    lowLabel: "Низкий",
+    summaryLabel: "Оценка",
+
+    flagsLabel: "Нарушения политики",
+    flagsEmpty: "Нарушений не обнаружено",
+    triggerLabel: "Проблемный текст",
+    explanationLabel: "Почему это рискованно",
+    saferVersionLabel: "Безопасная замена",
+
+    safeItemsLabel: "Соответствующие элементы",
+    noIssuesTitle: "Всё чисто",
+    noIssuesSub: "Нарушений политики в тексте объявления не обнаружено.",
+
+    suspensionRiskLabel: "Высокий риск блокировки",
+    policyViolationLabel: "Потенциальное нарушение политики",
+
+    aiAnalysisLabel: "Стратегический анализ AI",
+
+    severityHigh: "Высокий",
+    severityMedium: "Средний",
+    severityLow: "Низкий",
+
+    categoryMisleading: "Вводящие в заблуждение",
+    categoryUnrealistic: "Нереалистичные обещания",
+    categoryFinancial: "Финансовые риски",
+    categoryCrypto: "Криптовалютные риски",
+    categoryHealthcare: "Медицинские заявления",
+    categorySensational: "Сенсационный язык",
+    categoryEmployment: "Заявления о заработке",
+    categoryOther: "Другое нарушение",
+    aiModeOpenAI: "Режим: OpenAI",
+    aiModeFallback: "Режим: Локальный",
   },
 
   ctr: {
@@ -405,9 +455,17 @@ export const ru: Translations = {
     competitorDesc: "Сравните с лучшими объявлениями в вашей нише",
     analyzeBtn: "Анализировать CTR",
     analyzingBtn: "Анализируем...",
+    reanalyzingBtn: "Повторить анализ",
     emptyMsg: "Вставьте текст объявления и нажмите «Анализировать»",
     overallScoreLabel: "Общая оценка CTR",
     breakdownLabel: "Разбивка по категориям",
+    breakdownNames: {
+      headlineStrength: "Сила заголовка",
+      callToAction: "Призыв к действию",
+      keywordRelevance: "Релевантность ключей",
+      emotionalAppeal: "Эмоциональный отклик",
+      uniqueness: "Уникальность",
+    },
     recommendationsLabel: "Рекомендации AI",
     improveBtn: "Улучшить с AI",
     hideBtn: "Скрыть",
@@ -415,6 +473,8 @@ export const ru: Translations = {
     scoreExcellent: "Отлично",
     scoreAverage: "Средне",
     scoreNeedsWork: "Требует работы",
+    aiModeOpenAI: "Режим: OpenAI",
+    aiModeFallback: "Режим: Локальный",
   },
 
   support: {

@@ -1555,5 +1555,6 @@ export function generateRSA(
     descriptions: generateDescriptions(ctx),
     ctaSuggestions: generateCTA(ctx),
     moderation: generateRiskWarnings(ctx),
+    aiMode: "fallback" as const,
   };
 }

@@ -145,6 +145,8 @@ export interface Translations {
     strengthLabels: { excellent: string; good: string; average: string; weak: string };
     riskLabels: { low: string; medium: string; high: string };
     severityLabels: { low: string; medium: string; high: string };
+    aiModeOpenAI: string;
+    aiModeFallback: string;
   };
 
   pricing: {
@@ -204,26 +206,75 @@ export interface Translations {
   moderation: {
     pageTitle: string;
     pageSubtitle: string;
-    headlinesLabel: string;
-    descriptionsLabel: string;
-    addBtn: string;
+
+    // Presets
+    presetsLabel: string;
+    presets: [string, string, string, string, string, string];
+
+    // Input
+    adCopyLabel: string;
+    adCopyPlaceholder: string;
+    adCopyHint: string;
     industryLabel: string;
     industryPlaceholder: string;
     industries: string[];
+
+    // Buttons
     checkBtn: string;
     checkingBtn: string;
-    emptyMsg: string;
+    recheckBtn: string;
+
+    // Empty state
+    emptyTitle: string;
+    emptySubtitle: string;
+    emptyHints: [string, string, string];
+
+    // Loading
+    loadingTitle: string;
+    loadingSteps: [string, string, string, string];
+
+    // Results
+    overallScoreLabel: string;
     riskLow: string;
     riskMedium: string;
     riskHigh: string;
-    complianceTitle: string;
-    issuesFoundDesc: string;
-    issuesLabel: string;
-    compliantLabel: string;
-    fixBtn: string;
-    highLabel: string;
-    mediumLabel: string;
-    lowLabel: string;
+    summaryLabel: string;
+
+    // Flags section
+    flagsLabel: string;
+    flagsEmpty: string;
+    triggerLabel: string;
+    explanationLabel: string;
+    saferVersionLabel: string;
+
+    // Safe items
+    safeItemsLabel: string;
+    noIssuesTitle: string;
+    noIssuesSub: string;
+
+    // Warning banners
+    suspensionRiskLabel: string;
+    policyViolationLabel: string;
+
+    // AI analysis note
+    aiAnalysisLabel: string;
+
+    // Severity labels
+    severityHigh: string;
+    severityMedium: string;
+    severityLow: string;
+
+    // Category labels
+    categoryMisleading: string;
+    categoryUnrealistic: string;
+    categoryFinancial: string;
+    categoryCrypto: string;
+    categoryHealthcare: string;
+    categorySensational: string;
+    categoryEmployment: string;
+    categoryOther: string;
+    aiModeOpenAI: string;
+    aiModeFallback: string;
   };
 
   ctr: {
@@ -241,9 +292,17 @@ export interface Translations {
     competitorDesc: string;
     analyzeBtn: string;
     analyzingBtn: string;
+    reanalyzingBtn: string;
     emptyMsg: string;
     overallScoreLabel: string;
     breakdownLabel: string;
+    breakdownNames: {
+      headlineStrength: string;
+      callToAction: string;
+      keywordRelevance: string;
+      emotionalAppeal: string;
+      uniqueness: string;
+    };
     recommendationsLabel: string;
     improveBtn: string;
     hideBtn: string;
@@ -251,6 +310,8 @@ export interface Translations {
     scoreExcellent: string;
     scoreAverage: string;
     scoreNeedsWork: string;
+    aiModeOpenAI: string;
+    aiModeFallback: string;
   };
 
   support: {

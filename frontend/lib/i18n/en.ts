@@ -252,6 +252,8 @@ export const en: Translations = {
     },
     riskLabels: { low: "LOW RISK", medium: "MEDIUM RISK", high: "HIGH RISK" },
     severityLabels: { low: "low", medium: "medium", high: "high" },
+    aiModeOpenAI: "AI Mode: OpenAI",
+    aiModeFallback: "AI Mode: Fallback",
   },
 
   pricing: {
@@ -355,31 +357,79 @@ export const en: Translations = {
 
   moderation: {
     pageTitle: "Moderation Checker",
-    pageSubtitle: "Pre-screen your ads for Google policy violations before submission",
-    headlinesLabel: "Headlines",
-    descriptionsLabel: "Descriptions",
-    addBtn: "Add",
-    industryLabel: "Industry",
-    industryPlaceholder: "Select industry...",
+    pageSubtitle: "AI-powered Google Ads policy risk analyzer — catch violations before they suspend your account",
+
+    presetsLabel: "Quick examples:",
+    presets: ["Crypto Trading", "Investments", "Medical", "Supplements", "Finance", "Make Money Online"],
+
+    adCopyLabel: "Ad Copy",
+    adCopyPlaceholder: "Paste your headlines, descriptions, and CTAs here — one per line…",
+    adCopyHint: "Headlines ≤ 30 chars · Descriptions ≤ 90 chars · All text types accepted",
+    industryLabel: "Industry (optional)",
+    industryPlaceholder: "Select for better context...",
     industries: [
       "Technology & SaaS", "E-commerce & Retail", "Finance & Insurance",
-      "Healthcare & Medical", "Legal Services", "Real Estate", "Education",
-      "Travel & Hospitality", "Automotive", "Other",
+      "Healthcare & Medical", "Legal Services", "Real Estate",
+      "Education & Courses", "Travel & Hospitality", "Automotive",
+      "Crypto & Web3", "Supplements & Nutraceuticals",
+      "Employment & HR", "Other",
     ],
-    checkBtn: "Check Moderation",
-    checkingBtn: "Checking moderation...",
-    emptyMsg: "Enter your ad copy and click check",
+
+    checkBtn: "Analyze with AI",
+    checkingBtn: "Analyzing...",
+    recheckBtn: "Re-analyze",
+
+    emptyTitle: "Ready to analyze",
+    emptySubtitle: "Paste your ad copy on the left and click Analyze",
+    emptyHints: [
+      "Detects 8 policy risk categories",
+      "Provides safer rewrites for every violation",
+      "Works for all Google Ads sensitive categories",
+    ],
+
+    loadingTitle: "Scanning for policy risks...",
+    loadingSteps: [
+      "Parsing ad copy structure",
+      "Scanning policy categories",
+      "Checking financial & medical claims",
+      "Generating safer alternatives",
+    ],
+
+    overallScoreLabel: "Safety Score",
     riskLow: "LOW RISK",
     riskMedium: "MEDIUM RISK",
     riskHigh: "HIGH RISK",
-    complianceTitle: "Policy Compliance Report",
-    issuesFoundDesc: "Found {flagged} potential policy issues and {safe} compliant elements.",
-    issuesLabel: "Issues Found",
-    compliantLabel: "Compliant Elements",
-    fixBtn: "Auto-Fix Issues with AI",
-    highLabel: "High",
-    mediumLabel: "Medium",
-    lowLabel: "Low",
+    summaryLabel: "Assessment",
+
+    flagsLabel: "Policy Violations",
+    flagsEmpty: "No violations detected",
+    triggerLabel: "Flagged text",
+    explanationLabel: "Why it's risky",
+    saferVersionLabel: "Safer version",
+
+    safeItemsLabel: "Compliant Elements",
+    noIssuesTitle: "All clear",
+    noIssuesSub: "No policy violations detected in your ad copy.",
+
+    suspensionRiskLabel: "High suspension risk",
+    policyViolationLabel: "Potential policy violation",
+
+    aiAnalysisLabel: "AI Strategy Analysis",
+
+    severityHigh: "High",
+    severityMedium: "Medium",
+    severityLow: "Low",
+
+    categoryMisleading: "Misleading Claims",
+    categoryUnrealistic: "Unrealistic Promises",
+    categoryFinancial: "Financial Risk",
+    categoryCrypto: "Crypto Risk",
+    categoryHealthcare: "Healthcare Claims",
+    categorySensational: "Sensational Language",
+    categoryEmployment: "Employment Claims",
+    categoryOther: "Other Violation",
+    aiModeOpenAI: "AI Mode: OpenAI",
+    aiModeFallback: "AI Mode: Fallback",
   },
 
   ctr: {
@@ -399,10 +449,18 @@ export const en: Translations = {
     competitorTitle: "Competitor Analysis",
     competitorDesc: "Compare against top ads in your niche",
     analyzeBtn: "Analyze CTR",
-    analyzingBtn: "Analyzing CTR...",
+    analyzingBtn: "Analyzing...",
+    reanalyzingBtn: "Re-analyze",
     emptyMsg: "Paste your ad copy and click analyze",
     overallScoreLabel: "Overall CTR Score",
     breakdownLabel: "Score Breakdown",
+    breakdownNames: {
+      headlineStrength: "Headline Strength",
+      callToAction: "Call to Action",
+      keywordRelevance: "Keyword Relevance",
+      emotionalAppeal: "Emotional Appeal",
+      uniqueness: "Uniqueness",
+    },
     recommendationsLabel: "AI Recommendations",
     improveBtn: "Improve with AI",
     hideBtn: "Hide",
@@ -410,6 +468,8 @@ export const en: Translations = {
     scoreExcellent: "Excellent",
     scoreAverage: "Average",
     scoreNeedsWork: "Needs Work",
+    aiModeOpenAI: "AI Mode: OpenAI",
+    aiModeFallback: "AI Mode: Fallback",
   },
 
   support: {

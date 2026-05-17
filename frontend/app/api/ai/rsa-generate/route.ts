@@ -217,16 +217,22 @@ function sanitiseResult(raw: unknown, language: string): RSAFullResult {
 // ─── Route handler ────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-  // Must have an API key
+  const isDev = process.env.NODE_ENV === "development";
+
+  // ── API key check ─────────────────────────────────────────────────────────
   const apiKey = process.env.OPENAI_API_KEY?.trim();
+  const maskedKey = apiKey ? `${apiKey.slice(0, 7)}...${apiKey.slice(-4)}` : "(not set)";
+  console.log(`[rsa-generate] API key: ${maskedKey}`);
+
   if (!apiKey) {
+    console.warn("[rsa-generate] ⚠️  No OPENAI_API_KEY — returning 503 (client will fall back)");
     return NextResponse.json(
-      { error: "no_key", message: "OPENAI_API_KEY not configured" },
+      { error: "no_key", message: "OPENAI_API_KEY not configured — add it to .env.local" },
       { status: 503 }
     );
   }
 
-  // Parse and validate request body
+  // ── Parse body ────────────────────────────────────────────────────────────
   let body: Record<string, unknown>;
   try {
     body = await req.json();
@@ -234,20 +240,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
 
-  const niche      = typeof body.niche      === "string" ? body.niche.trim()      : "";
+  const niche       = typeof body.niche       === "string" ? body.niche.trim()       : "";
   const countryCode = typeof body.countryCode === "string" ? body.countryCode.trim() : "";
-  const language   = typeof body.language   === "string" ? body.language.trim()   : "English";
-  const goal       = typeof body.goal       === "string" ? body.goal.trim()       : "";
-  const tone       = typeof body.tone       === "string" ? body.tone.trim()       : "";
+  const language    = typeof body.language    === "string" ? body.language.trim()    : "English";
+  const goal        = typeof body.goal        === "string" ? body.goal.trim()        : "";
+  const tone        = typeof body.tone        === "string" ? body.tone.trim()        : "";
 
   if (niche.length < 3) {
     return NextResponse.json({ error: "niche_too_short" }, { status: 400 });
   }
 
-  const model = process.env.OPENAI_MODEL?.trim() || "gpt-5.5";
+  const model = process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini";
 
   try {
     const client = new OpenAI({ apiKey });
+    console.log(`[rsa-generate] 🚀 Calling OpenAI model="${model}" niche="${niche.slice(0, 40)}" lang="${language}"`);
 
     const completion = await client.chat.completions.create({
       model,
@@ -257,7 +264,7 @@ export async function POST(req: NextRequest) {
       ],
       response_format: { type: "json_object" },
       temperature: 0.72,
-      max_tokens: 2400,
+      max_completion_tokens: 2400,
     });
 
     const content = completion.choices[0]?.message?.content;
@@ -266,16 +273,21 @@ export async function POST(req: NextRequest) {
     const parsed: unknown = JSON.parse(content);
     const result = sanitiseResult(parsed, language);
 
-    return NextResponse.json(result);
+    const usage = completion.usage;
+    console.log(`[rsa-generate] ✅ OpenAI success — ${usage?.total_tokens ?? "?"} tokens, ${result.headlines.length} headlines`);
+
+    return NextResponse.json({ ...result, aiMode: "openai" });
 
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error("[rsa-generate] OpenAI error:", message);
+    console.error("[rsa-generate] ❌ OpenAI error:", message);
 
-    // Return 503 so frontend falls back to rule-based generator
-    return NextResponse.json(
-      { error: "ai_failed", message },
-      { status: 503 }
-    );
+    if (isDev) {
+      return NextResponse.json(
+        { error: "ai_failed", message, hint: "Check OPENAI_API_KEY in .env.local and OPENAI_MODEL value" },
+        { status: 503 }
+      );
+    }
+    return NextResponse.json({ error: "ai_failed", message }, { status: 503 });
   }
 }

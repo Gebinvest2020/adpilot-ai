@@ -751,8 +751,8 @@ export default function RSAGeneratorPage() {
       }
 
       return data as RSAFullResult;
-    } catch {
-      // Fall back to rule-based generator silently
+    } catch (e) {
+      console.warn("[rsa-generator] ⚠️  API failed, using local fallback:", (e as Error).message);
       return generateRSA(form.niche, form.country, form.language, form.goal, form.tone);
     }
   };
@@ -1067,6 +1067,17 @@ export default function RSAGeneratorPage() {
                     <span className="text-xs text-white/22 hidden sm:inline">
                       {results.generatedAt}
                     </span>
+                    {results.aiMode && (
+                      <span className={cn(
+                        "flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full border",
+                        results.aiMode === "openai"
+                          ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                          : "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                      )}>
+                        <span className={cn("w-1.5 h-1.5 rounded-full", results.aiMode === "openai" ? "bg-emerald-400 animate-pulse" : "bg-amber-400")} />
+                        {results.aiMode === "openai" ? r.aiModeOpenAI : r.aiModeFallback}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <motion.button
