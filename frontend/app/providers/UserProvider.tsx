@@ -138,11 +138,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // ── Initial session check ───────────────────────────────────────────────
+    // We use getSession() (reads localStorage, no network call, no auth mutex)
+    // so UserProvider never blocks the auth mutex at startup. This prevents
+    // any subsequent auth calls (e.g. in saveGeneration) from deadlocking.
     const init = async () => {
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data: { session },
+      } = await supabase.auth.getSession();
 
+      const user = session?.user ?? null;
       setSupabaseUser(user);
       if (user) await loadProfile(user.id, user.email ?? "");
       setIsLoaded(true);

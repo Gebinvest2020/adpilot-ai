@@ -15,6 +15,7 @@ import { exportCTRTxt, exportCTRJson } from "@/lib/export";
 import ExportMenu from "@/components/shared/ExportMenu";
 import HistoryPanel from "@/components/shared/HistoryPanel";
 import { useToast } from "@/lib/toast";
+import { useUser } from "@/app/providers/UserProvider";
 
 // ─── AI Mode badge ─────────────────────────────────────────────────────────────
 
@@ -146,6 +147,7 @@ export default function CTRAnalyzerPage() {
   const { locale } = useLocale();
 
   const { toast } = useToast();
+  const { user, isLoaded } = useUser();
   const [adText, setAdText]     = useState("");
   const [keywords, setKeywords] = useState("");
   const [industry, setIndustry] = useState("");
@@ -193,18 +195,20 @@ export default function CTRAnalyzerPage() {
     setResult(res);
     setLoading(false);
 
-    // Persist to Supabase — fully awaited
-    console.log("[CTR] calling saveGeneration…", { adText: adText.slice(0, 40), keywords, industry });
-    const savedId = await saveGeneration(
-      "ctr_analyses",
-      { adText, keywords, industry, language },
-      res as unknown as Record<string, unknown>
-    );
-    if (savedId) {
-      console.log("[CTR] ✓ saved to Supabase, id =", savedId);
+    // Guard: only save if auth has hydrated
+    if (!isLoaded || !user.id) {
+      console.error("[CTR] saveGeneration skipped — auth not ready", { isLoaded, userId: user.id });
+      toast("error", "Session not ready — please try again in a moment");
     } else {
-      console.error("[CTR] ✗ saveGeneration returned null — see logs above");
-      toast("error", "History save failed — open DevTools Console for details");
+      const savedId = await saveGeneration(
+        "ctr_analyses",
+        user.id,
+        { adText, keywords, industry, language },
+        res as unknown as Record<string, unknown>
+      );
+      if (!savedId) {
+        toast("error", "History save failed — open DevTools Console for details");
+      }
     }
     setHistoryToken((n) => n + 1);
 

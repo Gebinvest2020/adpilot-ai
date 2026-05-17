@@ -16,6 +16,7 @@ import { exportModerationTxt, exportModerationJson, exportModerationCsv } from "
 import ExportMenu from "@/components/shared/ExportMenu";
 import HistoryPanel from "@/components/shared/HistoryPanel";
 import { useToast } from "@/lib/toast";
+import { useUser } from "@/app/providers/UserProvider";
 
 // ─── Preset copy constants ─────────────────────────────────────────────────────
 
@@ -356,6 +357,7 @@ export default function ModerationCheckerPage() {
   const { locale } = useLocale();
 
   const { toast } = useToast();
+  const { user, isLoaded } = useUser();
   const [adCopy, setAdCopy]   = useState("");
   const [industry, setIndustry] = useState("");
   const [loading, setLoading]   = useState(false);
@@ -400,18 +402,20 @@ export default function ModerationCheckerPage() {
     setResult(res);
     setLoading(false);
 
-    // Persist to Supabase — fully awaited
-    console.log("[Moderation] calling saveGeneration…", { adCopy: adCopy.slice(0, 40), industry });
-    const savedId = await saveGeneration(
-      "moderation_checks",
-      { adCopy, industry, language: locale === "ru" ? "Russian" : "English" },
-      res as unknown as Record<string, unknown>
-    );
-    if (savedId) {
-      console.log("[Moderation] ✓ saved to Supabase, id =", savedId);
+    // Guard: only save if auth has hydrated
+    if (!isLoaded || !user.id) {
+      console.error("[Moderation] saveGeneration skipped — auth not ready", { isLoaded, userId: user.id });
+      toast("error", "Session not ready — please try again in a moment");
     } else {
-      console.error("[Moderation] ✗ saveGeneration returned null — see logs above");
-      toast("error", "History save failed — open DevTools Console for details");
+      const savedId = await saveGeneration(
+        "moderation_checks",
+        user.id,
+        { adCopy, industry, language: locale === "ru" ? "Russian" : "English" },
+        res as unknown as Record<string, unknown>
+      );
+      if (!savedId) {
+        toast("error", "History save failed — open DevTools Console for details");
+      }
     }
     setHistoryToken((n) => n + 1);
 

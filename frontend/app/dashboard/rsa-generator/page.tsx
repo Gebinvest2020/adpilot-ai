@@ -18,6 +18,7 @@ import { exportRSATxt, exportRSACsv, exportRSAJson } from "@/lib/export";
 import ExportMenu from "@/components/shared/ExportMenu";
 import HistoryPanel from "@/components/shared/HistoryPanel";
 import { useToast } from "@/lib/toast";
+import { useUser } from "@/app/providers/UserProvider";
 
 // ─── Options ────────────────────────────────────────────────────────────────
 
@@ -792,6 +793,7 @@ export default function RSAGeneratorPage() {
   const t = useT();
   const r = t.rsa; // shorthand
   const { toast } = useToast();
+  const { user, isLoaded } = useUser();
 
   const [form, setForm] = useState({
     niche: "",
@@ -890,33 +892,28 @@ export default function RSAGeneratorPage() {
     setResults(result);
     setLoading(false);
 
-    // Persist to Supabase — fully awaited with explicit debug logging
-    console.log("[RSA] calling saveGeneration…", {
-      niche:    form.niche,
-      country:  form.country,
-      language: form.language,
-      goal:     form.goal,
-      tone:     form.tone,
-      outputKeys: Object.keys(result as object),
-    });
-
-    const savedId = await saveGeneration(
-      "rsa_generations",
-      {
-        niche:    form.niche,
-        country:  form.country,
-        language: form.language,
-        goal:     form.goal,
-        tone:     form.tone,
-      },
-      result as unknown as Record<string, unknown>
-    );
-
-    if (savedId) {
-      console.log("[RSA] ✓ saved to Supabase, id =", savedId);
+    // Guard: only save if auth has hydrated and user is present
+    if (!isLoaded || !user.id) {
+      console.error("[RSA] saveGeneration skipped — auth not ready", { isLoaded, userId: user.id });
+      toast("error", "Session not ready — please try again in a moment");
     } else {
-      console.error("[RSA] ✗ saveGeneration returned null — see logs above");
-      toast("error", "History save failed — open DevTools Console for details");
+      // Persist to Supabase — userId from context, no auth call inside saveGeneration
+      const savedId = await saveGeneration(
+        "rsa_generations",
+        user.id,
+        {
+          niche:    form.niche,
+          country:  form.country,
+          language: form.language,
+          goal:     form.goal,
+          tone:     form.tone,
+        },
+        result as unknown as Record<string, unknown>
+      );
+
+      if (!savedId) {
+        toast("error", "History save failed — open DevTools Console for details");
+      }
     }
 
     // Trigger HistoryPanel to refetch from Supabase
