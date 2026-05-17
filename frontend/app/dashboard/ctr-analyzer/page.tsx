@@ -193,14 +193,18 @@ export default function CTRAnalyzerPage() {
     setResult(res);
     setLoading(false);
 
-    // Persist to Supabase
-    const saved = await saveGeneration(
+    // Persist to Supabase — fully awaited
+    console.log("[CTR] calling saveGeneration…", { adText: adText.slice(0, 40), keywords, industry });
+    const savedId = await saveGeneration(
       "ctr_analyses",
       { adText, keywords, industry, language },
       res as unknown as Record<string, unknown>
     );
-    if (!saved) {
-      toast("error", "Failed to save to history — check console for details");
+    if (savedId) {
+      console.log("[CTR] ✓ saved to Supabase, id =", savedId);
+    } else {
+      console.error("[CTR] ✗ saveGeneration returned null — see logs above");
+      toast("error", "History save failed — open DevTools Console for details");
     }
     setHistoryToken((n) => n + 1);
 

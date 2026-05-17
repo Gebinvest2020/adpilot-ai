@@ -400,14 +400,18 @@ export default function ModerationCheckerPage() {
     setResult(res);
     setLoading(false);
 
-    // Persist to Supabase
-    const saved = await saveGeneration(
+    // Persist to Supabase — fully awaited
+    console.log("[Moderation] calling saveGeneration…", { adCopy: adCopy.slice(0, 40), industry });
+    const savedId = await saveGeneration(
       "moderation_checks",
       { adCopy, industry, language: locale === "ru" ? "Russian" : "English" },
       res as unknown as Record<string, unknown>
     );
-    if (!saved) {
-      toast("error", "Failed to save to history — check console for details");
+    if (savedId) {
+      console.log("[Moderation] ✓ saved to Supabase, id =", savedId);
+    } else {
+      console.error("[Moderation] ✗ saveGeneration returned null — see logs above");
+      toast("error", "History save failed — open DevTools Console for details");
     }
     setHistoryToken((n) => n + 1);
 

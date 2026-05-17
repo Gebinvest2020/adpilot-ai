@@ -3,10 +3,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * Client-side database helpers for persisting tool results and reading history.
  * All functions are safe to call from "use client" components.
- * Errors are caught and logged — callers get null/[] on failure so the UI
- * never breaks if Supabase is unavailable.
  */
-"use client";
 
 import { createClient } from "./client";
 
@@ -32,46 +29,95 @@ export interface ProfileUpdate {
   niche?: string;
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Safely convert any value to a plain JSON-serializable object.
+ * Drops undefined values, converts Date → string, throws on circular refs.
+ */
+function toJsonSafe(value: unknown): Record<string, unknown> {
+  try {
+    return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
+  } catch (e) {
+    console.error("[db] toJsonSafe: could not serialize value", e, value);
+    throw e;
+  }
+}
+
 // ─── Generation save ──────────────────────────────────────────────────────────
 
 /**
  * Persist a tool result to Supabase.
- * Fire-and-forget safe: returns the new row ID or null on failure.
- *
- * @example
- *   saveGeneration("rsa_generations", { niche: "SaaS" }, result).catch(console.error);
+ * Fully awaited — returns the new row ID on success or null on failure.
+ * Logs every step so failures are visible in the browser DevTools console.
  */
 export async function saveGeneration(
   table: TableName,
   input: Record<string, unknown>,
   output: Record<string, unknown>
 ): Promise<string | null> {
+  console.log(`[saveGeneration] ▶ START  table=${table}`);
+
   try {
     const supabase = createClient();
 
-    // Make sure there's an authenticated user before inserting
+    // ── Step 1: confirm authenticated user ────────────────────────────────
+    console.log("[saveGeneration] checking auth.getUser()…");
     const {
       data: { user },
+      error: authError,
     } = await supabase.auth.getUser();
-    if (!user) {
-      console.error(`[db] saveGeneration(${table}): no authenticated user — insert skipped`);
+
+    if (authError) {
+      console.error("[saveGeneration] auth.getUser() ERROR:", authError);
       return null;
     }
+    if (!user) {
+      console.error(
+        "[saveGeneration] auth.getUser() returned NULL — user is not authenticated"
+      );
+      return null;
+    }
+    console.log(`[saveGeneration] ✓ user confirmed  id=${user.id}  email=${user.email}`);
 
+    // ── Step 2: JSON-safe serialise input & output ────────────────────────
+    let safeInput: Record<string, unknown>;
+    let safeOutput: Record<string, unknown>;
+    try {
+      safeInput  = toJsonSafe(input);
+      safeOutput = toJsonSafe(output);
+    } catch {
+      console.error("[saveGeneration] serialization failed — aborting insert");
+      return null;
+    }
+    console.log("[saveGeneration] input  keys:", Object.keys(safeInput));
+    console.log("[saveGeneration] output keys:", Object.keys(safeOutput));
+
+    // ── Step 3: INSERT ────────────────────────────────────────────────────
+    console.log(`[saveGeneration] inserting into ${table} with user_id=${user.id}…`);
     const { data, error } = await supabase
       .from(table)
-      .insert({ user_id: user.id, input, output })
+      .insert({ user_id: user.id, input: safeInput, output: safeOutput })
       .select("id")
       .single();
 
     if (error) {
-      console.error(`[db] saveGeneration(${table}) INSERT failed:`, error);
+      console.error(`[saveGeneration] ✗ INSERT FAILED  table=${table}`, {
+        code:    error.code,
+        message: error.message,
+        details: error.details,
+        hint:    error.hint,
+        full:    error,
+      });
       return null;
     }
 
-    return (data as { id: string }).id;
+    const id = (data as { id: string }).id;
+    console.log(`[saveGeneration] ✓ INSERT OK  id=${id}  table=${table}`);
+    return id;
+
   } catch (err) {
-    console.error("[db] saveGeneration unexpected error:", err);
+    console.error("[saveGeneration] UNEXPECTED EXCEPTION:", err);
     return null;
   }
 }
@@ -92,7 +138,10 @@ export async function fetchHistory(
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return [];
+    if (!user) {
+      console.warn("[fetchHistory] no authenticated user — returning empty list");
+      return [];
+    }
 
     const results = await Promise.all(
       tables.map(async (table) => {
@@ -104,18 +153,22 @@ export async function fetchHistory(
           .limit(limit);
 
         if (error) {
-          console.warn(`[db] fetchHistory(${table}):`, error.message);
+          console.error(`[fetchHistory] table=${table} ERROR:`, error);
           return [] as HistoryRow[];
         }
 
         return (data ?? []).map((row) => ({
-          ...(row as { id: string; input: Record<string, unknown>; output: Record<string, unknown>; created_at: string }),
+          ...(row as {
+            id: string;
+            input: Record<string, unknown>;
+            output: Record<string, unknown>;
+            created_at: string;
+          }),
           table,
         }));
       })
     );
 
-    // Merge all tables and sort by date descending
     return results
       .flat()
       .sort(
@@ -123,16 +176,13 @@ export async function fetchHistory(
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
   } catch (err) {
-    console.warn("[db] fetchHistory unexpected error:", err);
+    console.error("[fetchHistory] UNEXPECTED EXCEPTION:", err);
     return [];
   }
 }
 
 // ─── History delete ───────────────────────────────────────────────────────────
 
-/**
- * Delete a single history record. RLS ensures users can only delete their own.
- */
 export async function deleteHistoryRecord(
   table: TableName,
   id: string
@@ -140,7 +190,9 @@ export async function deleteHistoryRecord(
   try {
     const supabase = createClient();
     const { error } = await supabase.from(table).delete().eq("id", id);
-    if (error) console.warn(`[db] deleteHistoryRecord(${table}, ${id}):`, error.message);
+    if (error) {
+      console.error(`[deleteHistoryRecord] table=${table} id=${id} ERROR:`, error);
+    }
     return !error;
   } catch {
     return false;
@@ -149,9 +201,6 @@ export async function deleteHistoryRecord(
 
 // ─── Profile helpers ──────────────────────────────────────────────────────────
 
-/**
- * Update the current user's profile row.
- */
 export async function updateProfileInDb(
   userId: string,
   data: ProfileUpdate
@@ -164,7 +213,7 @@ export async function updateProfileInDb(
       .eq("id", userId);
 
     if (error) {
-      console.warn("[db] updateProfileInDb:", error.message);
+      console.error("[updateProfileInDb] ERROR:", error);
       return false;
     }
     return true;

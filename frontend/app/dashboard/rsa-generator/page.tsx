@@ -890,15 +890,36 @@ export default function RSAGeneratorPage() {
     setResults(result);
     setLoading(false);
 
-    // Persist to Supabase
-    const saved = await saveGeneration(
+    // Persist to Supabase — fully awaited with explicit debug logging
+    console.log("[RSA] calling saveGeneration…", {
+      niche:    form.niche,
+      country:  form.country,
+      language: form.language,
+      goal:     form.goal,
+      tone:     form.tone,
+      outputKeys: Object.keys(result as object),
+    });
+
+    const savedId = await saveGeneration(
       "rsa_generations",
-      { niche: form.niche, country: form.country, language: form.language, goal: form.goal, tone: form.tone },
+      {
+        niche:    form.niche,
+        country:  form.country,
+        language: form.language,
+        goal:     form.goal,
+        tone:     form.tone,
+      },
       result as unknown as Record<string, unknown>
     );
-    if (!saved) {
-      toast("error", "Failed to save to history — check console for details");
+
+    if (savedId) {
+      console.log("[RSA] ✓ saved to Supabase, id =", savedId);
+    } else {
+      console.error("[RSA] ✗ saveGeneration returned null — see logs above");
+      toast("error", "History save failed — open DevTools Console for details");
     }
+
+    // Trigger HistoryPanel to refetch from Supabase
     setHistoryToken((n) => n + 1);
 
     toast("success", `Generated ${result.headlines.length} headlines`);
