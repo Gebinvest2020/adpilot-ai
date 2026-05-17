@@ -1,30 +1,40 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import {
-  Zap, LayoutDashboard, Shield, BarChart2,
+  Zap, LayoutDashboard, Shield, BarChart2, History,
   Settings, ChevronLeft, ChevronRight, LogOut, User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import { useUser } from "@/hooks/useUser";
+import { createClient } from "@/lib/supabase/client";
 
 export default function DashboardSidebar() {
   const t = useT();
-  const { user } = useUser();   // single source of truth — no local user state
+  const { user } = useUser();
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
 
   const navItems = [
     { label: t.sidebar.dashboard,         href: "/dashboard",                    icon: LayoutDashboard },
     { label: t.sidebar.rsaGenerator,      href: "/dashboard/rsa-generator",      icon: Zap },
     { label: t.sidebar.moderationChecker, href: "/dashboard/moderation-checker", icon: Shield },
     { label: t.sidebar.ctrAnalyzer,       href: "/dashboard/ctr-analyzer",       icon: BarChart2 },
+    { label: t.sidebar.history,           href: "/dashboard/history",            icon: History },
     { label: t.sidebar.settings,          href: "/dashboard/settings",           icon: Settings },
   ];
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  };
 
   return (
     <motion.aside
@@ -102,8 +112,9 @@ export default function DashboardSidebar() {
         })}
       </nav>
 
-      {/* User profile */}
-      <div className="border-t border-white/[0.06] p-2">
+      {/* User profile + logout */}
+      <div className="border-t border-white/[0.06] p-2 space-y-1">
+        {/* Settings link */}
         <Link href="/dashboard/settings">
           <div
             className={cn(
@@ -111,7 +122,6 @@ export default function DashboardSidebar() {
               collapsed ? "justify-center" : ""
             )}
           >
-            {/* Avatar — initials derived from user name */}
             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0 text-[11px] font-bold text-white">
               {user.initials || <User className="w-3.5 h-3.5" />}
             </div>
@@ -130,12 +140,33 @@ export default function DashboardSidebar() {
                 </motion.div>
               )}
             </AnimatePresence>
-
-            {!collapsed && (
-              <LogOut className="w-3.5 h-3.5 text-white/30 hover:text-white/70 flex-shrink-0 transition-colors" />
-            )}
           </div>
         </Link>
+
+        {/* Logout button */}
+        <button
+          onClick={handleLogout}
+          title="Sign out"
+          className={cn(
+            "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-white/35 hover:text-red-400 hover:bg-red-500/[0.07] transition-all",
+            collapsed ? "justify-center" : ""
+          )}
+        >
+          <LogOut className="w-3.5 h-3.5 flex-shrink-0" />
+          <AnimatePresence>
+            {!collapsed && (
+              <motion.span
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: "auto" }}
+                exit={{ opacity: 0, width: 0 }}
+                transition={{ duration: 0.2 }}
+                className="text-xs font-medium whitespace-nowrap overflow-hidden"
+              >
+                Sign out
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </button>
       </div>
 
       {/* Collapse toggle */}

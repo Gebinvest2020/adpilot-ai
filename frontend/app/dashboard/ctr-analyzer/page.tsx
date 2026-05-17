@@ -11,6 +11,7 @@ import type { CTRAnalysisResult, CTRBreakdownKey } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { useT, useLocale } from "@/lib/i18n";
 import { addHistoryItem, type HistoryItem } from "@/lib/history";
+import { saveGeneration } from "@/lib/supabase/db";
 import { exportCTRTxt, exportCTRJson } from "@/lib/export";
 import ExportMenu from "@/components/shared/ExportMenu";
 import HistoryPanel from "@/components/shared/HistoryPanel";
@@ -193,7 +194,7 @@ export default function CTRAnalyzerPage() {
     setResult(res);
     setLoading(false);
 
-    // Save to history
+    // Save to localStorage (drives the inline HistoryPanel)
     addHistoryItem({
       type: "ctr",
       preview: adText.split("\n")[0].slice(0, 60),
@@ -201,6 +202,14 @@ export default function CTRAnalyzerPage() {
       result: res,
     });
     setHistoryToken((n) => n + 1);
+
+    // Also persist to Supabase for cross-device history (fire-and-forget)
+    saveGeneration(
+      "ctr_analyses",
+      { adText, keywords, industry, language },
+      res as unknown as Record<string, unknown>
+    ).catch(console.error);
+
     toast("success", `CTR score: ${res.overallScore}/100`);
   };
 

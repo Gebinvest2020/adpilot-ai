@@ -17,6 +17,7 @@ export interface Translations {
     rsaGenerator: string;
     moderationChecker: string;
     ctrAnalyzer: string;
+    history: string;
     settings: string;
     plan: string;
   };

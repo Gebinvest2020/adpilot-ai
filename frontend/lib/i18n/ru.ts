@@ -17,6 +17,7 @@ export const ru: Translations = {
     rsaGenerator: "RSA Генератор",
     moderationChecker: "Проверка модерации",
     ctrAnalyzer: "Анализ CTR",
+    history: "История",
     settings: "Настройки",
     plan: "Тариф Growth",
   },

@@ -12,6 +12,7 @@ import type { ModerationCheckResult, ModerationPolicyFlag, ModerationCategory } 
 import { cn } from "@/lib/utils";
 import { useT, useLocale } from "@/lib/i18n";
 import { addHistoryItem, type HistoryItem } from "@/lib/history";
+import { saveGeneration } from "@/lib/supabase/db";
 import { exportModerationTxt, exportModerationJson, exportModerationCsv } from "@/lib/export";
 import ExportMenu from "@/components/shared/ExportMenu";
 import HistoryPanel from "@/components/shared/HistoryPanel";
@@ -400,7 +401,7 @@ export default function ModerationCheckerPage() {
     setResult(res);
     setLoading(false);
 
-    // Save to history
+    // Save to localStorage (drives the inline HistoryPanel)
     addHistoryItem({
       type: "moderation",
       preview: adCopy.split("\n")[0].slice(0, 60),
@@ -408,6 +409,14 @@ export default function ModerationCheckerPage() {
       result: res,
     });
     setHistoryToken((n) => n + 1);
+
+    // Also persist to Supabase for cross-device history (fire-and-forget)
+    saveGeneration(
+      "moderation_checks",
+      { adCopy, industry, language: locale === "ru" ? "Russian" : "English" },
+      res as unknown as Record<string, unknown>
+    ).catch(console.error);
+
     toast(
       res.overallScore >= 75 ? "success" : res.overallScore >= 45 ? "warning" : "error",
       `Safety score: ${res.overallScore}/100 — ${res.flags.length} issue${res.flags.length === 1 ? "" : "s"}`

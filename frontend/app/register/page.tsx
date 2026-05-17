@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { Zap, Mail, Lock, User, Eye, EyeOff, ArrowRight, Globe, GitBranch, Check } from "lucide-react";
 import AnimatedBackground from "@/components/shared/AnimatedBackground";
 import { useT } from "@/lib/i18n";
-import { saveUser } from "@/lib/storage";
+import { createClient } from "@/lib/supabase/client";
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -20,24 +20,53 @@ export default function RegisterPage() {
   const t = useT();
   const r = t.register;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !email.trim() || !password.trim()) {
       setError("Please fill in all fields.");
+      return;
+    }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
       return;
     }
 
     setLoading(true);
     setError("");
 
-    setTimeout(() => {
-      saveUser({ name: name.trim(), email: email.trim(), company: "", role: "" });
-      router.push("/dashboard");
-    }, 800);
+    const supabase = createClient();
+    const { error: authError } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        // full_name is stored in user_metadata and picked up by the DB trigger
+        data: { full_name: name.trim() },
+      },
+    });
+
+    if (authError) {
+      setError(authError.message);
+      setLoading(false);
+      return;
+    }
+
+    // Session cookie is set — refresh so middleware picks it up
+    router.push("/dashboard");
+    router.refresh();
+  };
+
+  const handleOAuth = async (provider: "google" | "github") => {
+    const supabase = createClient();
+    await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
   };
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#050508' }}>
+    <div className="min-h-screen flex" style={{ background: "#050508" }}>
       <AnimatedBackground />
 
       {/* Left panel */}
@@ -46,7 +75,7 @@ export default function RegisterPage() {
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.8 }}
         className="hidden lg:flex flex-col justify-between w-1/2 relative overflow-hidden p-12"
-        style={{ background: 'linear-gradient(135deg, #080810 0%, #0d0d1a 100%)' }}
+        style={{ background: "linear-gradient(135deg, #080810 0%, #0d0d1a 100%)" }}
       >
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/4 left-1/3 w-80 h-80 rounded-full bg-violet-600/10 blur-3xl" />
@@ -140,13 +169,13 @@ export default function RegisterPage() {
           {/* Social signup */}
           <div className="grid grid-cols-2 gap-3 mb-6">
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              onClick={() => { saveUser({ name: "Google User", email: "user@gmail.com", company: "" }); router.push("/dashboard"); }}
+              onClick={() => handleOAuth("google")}
               className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-white/[0.1] bg-white/[0.03] hover:bg-white/[0.06] text-white/70 hover:text-white text-sm font-medium transition-all">
               <Globe className="w-4 h-4" />
               Google
             </motion.button>
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              onClick={() => { saveUser({ name: "GitHub User", email: "user@github.com", company: "" }); router.push("/dashboard"); }}
+              onClick={() => handleOAuth("github")}
               className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-white/[0.1] bg-white/[0.03] hover:bg-white/[0.06] text-white/70 hover:text-white text-sm font-medium transition-all">
               <GitBranch className="w-4 h-4" />
               GitHub

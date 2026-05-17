@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { Zap, Mail, Lock, Eye, EyeOff, ArrowRight, Globe, GitBranch } from "lucide-react";
 import AnimatedBackground from "@/components/shared/AnimatedBackground";
 import { useT } from "@/lib/i18n";
-import { saveUser } from "@/lib/storage";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -19,7 +19,7 @@ export default function LoginPage() {
   const t = useT();
   const l = t.login;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
       setError("Please fill in all fields.");
@@ -29,22 +29,35 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    // Mock auth — derive a display name from the email address
-    setTimeout(() => {
-      const localPart = email.split("@")[0] ?? "User";
-      const name = localPart
-        .replace(/[._-]/g, " ")
-        .split(" ")
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(" ");
+    const supabase = createClient();
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
 
-      saveUser({ name, email, company: "", role: "" });
-      router.push("/dashboard");
-    }, 800);
+    if (authError) {
+      setError(authError.message);
+      setLoading(false);
+      return;
+    }
+
+    // Session cookie is now set — refresh so middleware picks it up
+    router.push("/dashboard");
+    router.refresh();
+  };
+
+  const handleOAuth = async (provider: "google" | "github") => {
+    const supabase = createClient();
+    await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
   };
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#050508' }}>
+    <div className="min-h-screen flex" style={{ background: "#050508" }}>
       <AnimatedBackground />
 
       {/* Left panel — product showcase */}
@@ -53,7 +66,7 @@ export default function LoginPage() {
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.8 }}
         className="hidden lg:flex flex-col justify-between w-1/2 relative overflow-hidden p-12"
-        style={{ background: 'linear-gradient(135deg, #080810 0%, #0d0d1a 100%)' }}
+        style={{ background: "linear-gradient(135deg, #080810 0%, #0d0d1a 100%)" }}
       >
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-indigo-600/10 blur-3xl" />
@@ -139,7 +152,7 @@ export default function LoginPage() {
           <div className="grid grid-cols-2 gap-3 mb-6">
             <motion.button
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              onClick={() => { saveUser({ name: "Google User", email: "user@gmail.com", company: "" }); router.push("/dashboard"); }}
+              onClick={() => handleOAuth("google")}
               className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-white/[0.1] bg-white/[0.03] hover:bg-white/[0.06] text-white/70 hover:text-white text-sm font-medium transition-all"
             >
               <Globe className="w-4 h-4" />
@@ -147,7 +160,7 @@ export default function LoginPage() {
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              onClick={() => { saveUser({ name: "GitHub User", email: "user@github.com", company: "" }); router.push("/dashboard"); }}
+              onClick={() => handleOAuth("github")}
               className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-white/[0.1] bg-white/[0.03] hover:bg-white/[0.06] text-white/70 hover:text-white text-sm font-medium transition-all"
             >
               <GitBranch className="w-4 h-4" />

@@ -14,6 +14,7 @@ import type { RSAFullResult, RSAHeadline, RSADescription } from "@/lib/mock-data
 import { generateRSA } from "@/lib/fake-ai/rsa-generator";
 import { useT, interp } from "@/lib/i18n";
 import { addHistoryItem, type HistoryItem } from "@/lib/history";
+import { saveGeneration } from "@/lib/supabase/db";
 import { exportRSATxt, exportRSACsv, exportRSAJson } from "@/lib/export";
 import ExportMenu from "@/components/shared/ExportMenu";
 import HistoryPanel from "@/components/shared/HistoryPanel";
@@ -890,7 +891,7 @@ export default function RSAGeneratorPage() {
     setResults(result);
     setLoading(false);
 
-    // Save to history
+    // Save to localStorage (drives the inline HistoryPanel)
     addHistoryItem({
       type: "rsa",
       preview: form.niche.slice(0, 60),
@@ -898,6 +899,14 @@ export default function RSAGeneratorPage() {
       result,
     });
     setHistoryToken((n) => n + 1);
+
+    // Also persist to Supabase for cross-device history (fire-and-forget)
+    saveGeneration(
+      "rsa_generations",
+      { niche: form.niche, country: form.country, language: form.language, goal: form.goal, tone: form.tone },
+      result as unknown as Record<string, unknown>
+    ).catch(console.error);
+
     toast("success", `Generated ${result.headlines.length} headlines`);
   };
 

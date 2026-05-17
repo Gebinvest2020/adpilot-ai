@@ -12,7 +12,7 @@ import { useT, useLocale } from "@/lib/i18n";
 import { getUsageStats, getHistory, type UsageStats } from "@/lib/history";
 import { useToast } from "@/lib/toast";
 import { loadSettings, saveSettings, getInitials } from "@/lib/storage";
-import { useUser } from "@/hooks/useUser";
+import { useUser, type UserProfile } from "@/app/providers/UserProvider";
 
 type Section = "profile" | "api" | "notifications" | "billing" | "privacy";
 
@@ -31,9 +31,10 @@ const LABELS = {
       title: "Profile",
       nameLabel: "Full name",
       emailLabel: "Email address",
-      companyLabel: "Company",
-      roleLabel: "Role",
-      roleOptions: ["PPC Manager", "Marketing Director", "Agency Owner", "Freelancer", "Developer", "Other"],
+      countryLabel: "Country",
+      countryPlaceholder: "e.g. Russia, USA, Germany",
+      nicheLabel: "Niche / Industry",
+      nichePlaceholder: "e.g. SaaS, e-commerce, finance",
       langLabel: "Dashboard language",
       saveBtn: "Save changes",
       savedMsg: "Changes saved",
@@ -113,9 +114,10 @@ const LABELS = {
       title: "Профиль",
       nameLabel: "Полное имя",
       emailLabel: "Email",
-      companyLabel: "Компания",
-      roleLabel: "Роль",
-      roleOptions: ["PPC-менеджер", "Директор по маркетингу", "Владелец агентства", "Фрилансер", "Разработчик", "Другое"],
+      countryLabel: "Страна",
+      countryPlaceholder: "напр. Россия, США, Германия",
+      nicheLabel: "Ниша / Сфера",
+      nichePlaceholder: "напр. SaaS, e-commerce, финансы",
       langLabel: "Язык дашборда",
       saveBtn: "Сохранить",
       savedMsg: "Сохранено",
@@ -241,12 +243,13 @@ export default function SettingsPage() {
   const t = useT();
   const { locale, setLocale } = useLocale();
   const { toast } = useToast();
-  const { user, updateUser, isLoaded } = useUser();
+  const { user, updateProfile, isLoaded } = useUser();
   const lbl = LABELS[locale] ?? LABELS.en;
 
   const [section, setSection] = useState<Section>("profile");
-  const [saved, setSaved] = useState(false);
-  const [copied, setCopied] = useState<string | null>(null);
+  const [saving,  setSaving]  = useState(false);
+  const [saved,   setSaved]   = useState(false);
+  const [copied,  setCopied]  = useState<string | null>(null);
   const [notifs, setNotifs] = useState<Record<string, boolean>>({
     api_limit: true, incidents: true, weekly: false, product: true, tips: false,
   });
@@ -254,41 +257,44 @@ export default function SettingsPage() {
     totalGenerations: 0, rsaCount: 0, ctrCount: 0, moderationCount: 0,
     avgCtrScore: 0, avgSafetyScore: 0, thisWeek: 0,
   });
-  // Initialize profile from context; will sync once isLoaded becomes true
-  const [profile, setProfile] = useState({
-    name: user.name, email: user.email, company: user.company, role: user.role,
+  // Local editable copy — synced from context once loaded
+  const [profile, setProfile] = useState<Pick<UserProfile, "name" | "email" | "country" | "niche">>({
+    name: user.name, email: user.email, country: user.country, niche: user.niche,
   });
 
-  // ── Hydrate form from context once client-side load completes ──────────────
+  // ── Hydrate form from Supabase profile once context is ready ───────────────
   useEffect(() => {
     if (!isLoaded) return;
-    setProfile({ name: user.name, email: user.email, company: user.company, role: user.role });
+    setProfile({ name: user.name, email: user.email, country: user.country, niche: user.niche });
 
     const settings = loadSettings();
     setNotifs(settings.notifications);
     if (settings.locale !== locale) setLocale(settings.locale);
 
     setUsageStats(getUsageStats());
-  // Only run when isLoaded flips to true — not on every user change
+  // Only sync when isLoaded changes (once on mount)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoaded]);
 
-  // ── Save profile + settings — updates context instantly ───────────────────
-  const handleSave = () => {
-    const ok = updateUser({
-      name:    profile.name,
-      email:   profile.email,
-      company: profile.company,
-      role:    profile.role,
+  // ── Save to Supabase — instantly re-renders sidebar/topbar ────────────────
+  const handleSave = async () => {
+    setSaving(true);
+    const ok = await updateProfile({
+      name:     profile.name,
+      country:  profile.country,
+      niche:    profile.niche,
+      language: locale as "en" | "ru",
     });
-    saveSettings({ locale, notifications: notifs });
+    // Keep locale preference in localStorage as well (offline fallback)
+    saveSettings({ locale: locale as "en" | "ru", notifications: notifs });
+    setSaving(false);
 
     if (ok) {
       setSaved(true);
-      toast("success", "Profile saved — sidebar and topbar updated instantly");
+      toast("success", "Profile saved — changes persist across devices");
       setTimeout(() => setSaved(false), 2500);
     } else {
-      toast("error", "Failed to save — localStorage may be blocked");
+      toast("error", "Failed to save — check your connection or Supabase config");
     }
   };
 
@@ -377,15 +383,28 @@ export default function SettingsPage() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <InputField label={lbl.profile.nameLabel}    value={profile.name}    onChange={(v) => setProfile({ ...profile, name: v })} />
-                    <InputField label={lbl.profile.emailLabel}   value={profile.email}   onChange={(v) => setProfile({ ...profile, email: v })} type="email" />
-                    <InputField label={lbl.profile.companyLabel} value={profile.company} onChange={(v) => setProfile({ ...profile, company: v })} />
+                    {/* Email is read-only — managed by Supabase Auth */}
                     <div>
-                      <label className="block text-[10px] font-bold text-white/35 uppercase tracking-widest mb-2">{lbl.profile.roleLabel}</label>
-                      <select value={profile.role} onChange={(e) => setProfile({ ...profile, role: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-white/[0.08] bg-white/[0.04] text-sm text-white focus:outline-none focus:border-indigo-500/40 transition-all appearance-none">
-                        <option value="" className="bg-[#0d0d14] text-white/40">—</option>
-                        {lbl.profile.roleOptions.map((o) => <option key={o} value={o} className="bg-[#0d0d14] text-white">{o}</option>)}
-                      </select>
+                      <label className="block text-[10px] font-bold text-white/35 uppercase tracking-widest mb-2">{lbl.profile.emailLabel}</label>
+                      <input
+                        type="email"
+                        value={profile.email}
+                        readOnly
+                        className="w-full px-4 py-2.5 rounded-xl border border-white/[0.05] bg-white/[0.02] text-sm text-white/40 cursor-not-allowed"
+                      />
                     </div>
+                    <InputField
+                      label={lbl.profile.countryLabel}
+                      value={profile.country}
+                      onChange={(v) => setProfile({ ...profile, country: v })}
+                      placeholder={lbl.profile.countryPlaceholder}
+                    />
+                    <InputField
+                      label={lbl.profile.nicheLabel}
+                      value={profile.niche}
+                      onChange={(v) => setProfile({ ...profile, niche: v })}
+                      placeholder={lbl.profile.nichePlaceholder}
+                    />
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold text-white/35 uppercase tracking-widest mb-2">
@@ -407,8 +426,20 @@ export default function SettingsPage() {
                       ))}
                     </div>
                   </div>
-                  <button onClick={handleSave} className={cn("flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all", saved ? "bg-emerald-600 text-white" : "bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-lg shadow-indigo-500/20")}>
-                    {saved ? <><Check className="w-4 h-4" />{lbl.profile.savedMsg}</> : <><Save className="w-4 h-4" />{lbl.profile.saveBtn}</>}
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className={cn("flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-60",
+                      saved ? "bg-emerald-600 text-white" : "bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-lg shadow-indigo-500/20"
+                    )}
+                  >
+                    {saving ? (
+                      <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving…</>
+                    ) : saved ? (
+                      <><Check className="w-4 h-4" />{lbl.profile.savedMsg}</>
+                    ) : (
+                      <><Save className="w-4 h-4" />{lbl.profile.saveBtn}</>
+                    )}
                   </button>
                 </div>
 
