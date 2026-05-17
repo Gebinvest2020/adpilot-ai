@@ -2,7 +2,16 @@
  * lib/supabase/db.ts
  * ─────────────────────────────────────────────────────────────────────────────
  * Client-side database helpers for persisting tool results and reading history.
- * All functions are safe to call from "use client" components.
+ * Imported from "use client" components only.
+ *
+ * AUTH NOTE:
+ *   getUser()    → validates JWT with Supabase auth server (network request).
+ *                  Can hang if the auth endpoint is slow / unreachable.
+ *   getSession() → reads the cached session from localStorage (no network).
+ *                  Safe for client-side inserts because the JWT is already
+ *                  trusted (it was issued by the same Supabase project).
+ *
+ *   We use getSession() here so saves are instant and never block on auth I/O.
  */
 
 import { createClient } from "./client";
@@ -33,24 +42,15 @@ export interface ProfileUpdate {
 
 /**
  * Safely convert any value to a plain JSON-serializable object.
- * Drops undefined values, converts Date → string, throws on circular refs.
+ * Drops undefined values, converts Dates to ISO strings, throws on
+ * circular references (which would make Supabase reject the JSONB payload).
  */
 function toJsonSafe(value: unknown): Record<string, unknown> {
-  try {
-    return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
-  } catch (e) {
-    console.error("[db] toJsonSafe: could not serialize value", e, value);
-    throw e;
-  }
+  return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
 }
 
 // ─── Generation save ──────────────────────────────────────────────────────────
 
-/**
- * Persist a tool result to Supabase.
- * Fully awaited — returns the new row ID on success or null on failure.
- * Logs every step so failures are visible in the browser DevTools console.
- */
 export async function saveGeneration(
   table: TableName,
   input: Record<string, unknown>,
@@ -61,60 +61,51 @@ export async function saveGeneration(
   try {
     const supabase = createClient();
 
-    // ── Step 1: confirm authenticated user ────────────────────────────────
-    console.log("[saveGeneration] checking auth.getUser()…");
+    // ── Step 1: get session from localStorage (no network call) ────────────
+    console.log("[saveGeneration] calling getSession()…");
     const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+      data: sessionData,
+      error: sessionError,
+    } = await supabase.auth.getSession();
 
-    if (authError) {
-      console.error("[saveGeneration] auth.getUser() ERROR:", authError);
+    console.log("[saveGeneration] getSession result:", {
+      session:  sessionData?.session ? "present" : "null",
+      userId:   sessionData?.session?.user?.id ?? null,
+      email:    sessionData?.session?.user?.email ?? null,
+      error:    sessionError,
+    });
+
+    if (sessionError) {
+      console.error("[saveGeneration] getSession ERROR:", sessionError);
       return null;
     }
+
+    const user = sessionData?.session?.user ?? null;
+
     if (!user) {
       console.error(
-        "[saveGeneration] auth.getUser() returned NULL — user is not authenticated"
+        "[saveGeneration] No active session — user is not logged in.\n" +
+        "Please log out and log back in, then try again."
       );
-      return null;
-    }
-    console.log(`[saveGeneration] ✓ user confirmed  id=${user.id}  email=${user.email}`);
 
-    // ── Step 2: JSON-safe serialise input & output ────────────────────────
-    let safeInput: Record<string, unknown>;
-    let safeOutput: Record<string, unknown>;
-    try {
-      safeInput  = toJsonSafe(input);
-      safeOutput = toJsonSafe(output);
-    } catch {
-      console.error("[saveGeneration] serialization failed — aborting insert");
-      return null;
-    }
-    console.log("[saveGeneration] input  keys:", Object.keys(safeInput));
-    console.log("[saveGeneration] output keys:", Object.keys(safeOutput));
-
-    // ── Step 3: INSERT ────────────────────────────────────────────────────
-    console.log(`[saveGeneration] inserting into ${table} with user_id=${user.id}…`);
-    const { data, error } = await supabase
-      .from(table)
-      .insert({ user_id: user.id, input: safeInput, output: safeOutput })
-      .select("id")
-      .single();
-
-    if (error) {
-      console.error(`[saveGeneration] ✗ INSERT FAILED  table=${table}`, {
-        code:    error.code,
-        message: error.message,
-        details: error.details,
-        hint:    error.hint,
-        full:    error,
+      // ── Step 1b: fallback attempt with getUser() ───────────────────────
+      console.log("[saveGeneration] fallback: trying getUser()…");
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      console.log("[saveGeneration] getUser result:", {
+        user:  userData?.user?.id ?? null,
+        error: userError,
       });
-      return null;
+
+      if (!userData?.user) {
+        console.error("[saveGeneration] Both getSession and getUser returned null. Aborting.");
+        return null;
+      }
+
+      // Proceed with getUser result
+      return await doInsert(supabase, table, userData.user.id, input, output);
     }
 
-    const id = (data as { id: string }).id;
-    console.log(`[saveGeneration] ✓ INSERT OK  id=${id}  table=${table}`);
-    return id;
+    return await doInsert(supabase, table, user.id, input, output);
 
   } catch (err) {
     console.error("[saveGeneration] UNEXPECTED EXCEPTION:", err);
@@ -122,12 +113,58 @@ export async function saveGeneration(
   }
 }
 
+async function doInsert(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  table: TableName,
+  userId: string,
+  input: Record<string, unknown>,
+  output: Record<string, unknown>
+): Promise<string | null> {
+  // ── Step 2: JSON-safe serialisation ─────────────────────────────────────
+  let safeInput: Record<string, unknown>;
+  let safeOutput: Record<string, unknown>;
+  try {
+    safeInput  = toJsonSafe(input);
+    safeOutput = toJsonSafe(output);
+  } catch (e) {
+    console.error("[saveGeneration] Serialization failed — object has non-JSON-safe values:", e);
+    return null;
+  }
+
+  // ── Step 3: log exact payload ────────────────────────────────────────────
+  const payload = { user_id: userId, input: safeInput, output: safeOutput };
+  console.log("[saveGeneration] Insert payload:", {
+    table,
+    user_id:      payload.user_id,
+    inputKeys:    Object.keys(safeInput),
+    outputKeys:   Object.keys(safeOutput),
+  });
+
+  // ── Step 4: INSERT ────────────────────────────────────────────────────────
+  console.log(`[saveGeneration] Executing INSERT into ${table}…`);
+  const { data, error } = await supabase
+    .from(table)
+    .insert(payload)
+    .select()
+    .single();
+
+  if (error) {
+    console.error(`[saveGeneration] Insert error (table=${table}):`, {
+      code:    error.code,
+      message: error.message,
+      details: error.details,
+      hint:    error.hint,
+    });
+    return null;
+  }
+
+  console.log(`[saveGeneration] Insert success (table=${table}):`, data);
+  return (data as { id: string }).id;
+}
+
 // ─── History fetch ────────────────────────────────────────────────────────────
 
-/**
- * Fetch the current user's history from one or all tool tables.
- * Results are sorted newest-first across all requested tables.
- */
 export async function fetchHistory(
   tables: TableName[] = ["rsa_generations", "moderation_checks", "ctr_analyses"],
   limit = 50
@@ -135,11 +172,11 @@ export async function fetchHistory(
   try {
     const supabase = createClient();
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: sessionData } = await supabase.auth.getSession();
+    const user = sessionData?.session?.user ?? null;
+
     if (!user) {
-      console.warn("[fetchHistory] no authenticated user — returning empty list");
+      console.warn("[fetchHistory] no active session — returning empty list");
       return [];
     }
 
