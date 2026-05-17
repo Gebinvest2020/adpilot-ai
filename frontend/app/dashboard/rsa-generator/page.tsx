@@ -1,18 +1,23 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap, Copy, Download, Check, Globe, Target, Sparkles,
   AlertTriangle, ChevronDown, ArrowRight, ExternalLink,
   RotateCcw, Shield, Info, Megaphone, TrendingUp, Search, Brain,
-  Monitor, Smartphone,
+  Monitor, Smartphone, FileText, Table, FileJson, Wand2, ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { RSAFullResult, RSAHeadline, RSADescription } from "@/lib/mock-data";
 import { generateRSA } from "@/lib/fake-ai/rsa-generator";
 import { useT, interp } from "@/lib/i18n";
+import { addHistoryItem, type HistoryItem } from "@/lib/history";
+import { exportRSATxt, exportRSACsv, exportRSAJson } from "@/lib/export";
+import ExportMenu from "@/components/shared/ExportMenu";
+import HistoryPanel from "@/components/shared/HistoryPanel";
+import { useToast } from "@/lib/toast";
 
 // ─── Options ────────────────────────────────────────────────────────────────
 
@@ -786,6 +791,7 @@ function LoadingState({
 export default function RSAGeneratorPage() {
   const t = useT();
   const r = t.rsa; // shorthand
+  const { toast } = useToast();
 
   const [form, setForm] = useState({
     niche: "",
@@ -800,6 +806,7 @@ export default function RSAGeneratorPage() {
   const [results, setResults] = useState<RSAFullResult | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("headlines");
+  const [historyToken, setHistoryToken] = useState(0);
 
   const isValid =
     form.niche.trim().length > 8 &&
@@ -811,6 +818,7 @@ export default function RSAGeneratorPage() {
   const handleCopy = (id: string, text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
+    toast("copy", "Copied to clipboard");
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -881,6 +889,16 @@ export default function RSAGeneratorPage() {
     const result = await resultPromise;
     setResults(result);
     setLoading(false);
+
+    // Save to history
+    addHistoryItem({
+      type: "rsa",
+      preview: form.niche.slice(0, 60),
+      score: result.moderation.score,
+      result,
+    });
+    setHistoryToken((n) => n + 1);
+    toast("success", `Generated ${result.headlines.length} headlines`);
   };
 
   const handleCopyAll = () => {
@@ -895,7 +913,32 @@ export default function RSAGeneratorPage() {
       "=== CTA SUGGESTIONS ===",
       ...results.ctaSuggestions.map((c, i) => `${i + 1}. ${c}`),
     ].join("\n");
-    handleCopy("__all__", out);
+    navigator.clipboard.writeText(out);
+    setCopiedId("__all__");
+    toast("copy", "All content copied to clipboard");
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  // Reopen from history
+  const handleReopen = (item: HistoryItem) => {
+    setResults(item.result as RSAFullResult);
+    setActiveTab("headlines");
+    toast("info", "Loaded from history");
+  };
+
+  // Export helpers
+  const buildExportData = () => {
+    if (!results) return null;
+    return {
+      niche: form.niche,
+      country: form.country,
+      language: form.language,
+      headlines: results.headlines,
+      descriptions: results.descriptions,
+      ctaSuggestions: results.ctaSuggestions,
+      moderation: results.moderation,
+      generatedAt: results.generatedAt ?? new Date().toLocaleString(),
+    };
   };
 
   const riskStyle = {
@@ -1115,6 +1158,13 @@ export default function RSAGeneratorPage() {
               </div>
             </div>
           </div>
+
+          {/* History panel */}
+          <HistoryPanel
+            type="rsa"
+            refreshToken={historyToken}
+            onReopen={handleReopen}
+          />
         </motion.div>
 
         {/* ── RIGHT: Results panel ───────────────────────────────────────── */}
@@ -1175,7 +1225,7 @@ export default function RSAGeneratorPage() {
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <motion.button
                       whileHover={{ scale: 1.04 }}
                       whileTap={{ scale: 0.96 }}
@@ -1189,14 +1239,38 @@ export default function RSAGeneratorPage() {
                       )}
                       {r.copyAllBtn}
                     </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.04 }}
-                      whileTap={{ scale: 0.96 }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/[0.1] text-xs text-white/45 hover:text-white hover:border-white/20 transition-all"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      {r.exportBtn}
-                    </motion.button>
+                    <ExportMenu
+                      disabled={!results}
+                      options={[
+                        {
+                          label: "Plain text",
+                          format: "TXT",
+                          icon: FileText,
+                          onClick: () => {
+                            const d = buildExportData();
+                            if (d) { exportRSATxt(d); toast("success", "Exported as TXT"); }
+                          },
+                        },
+                        {
+                          label: "Spreadsheet",
+                          format: "CSV",
+                          icon: Table,
+                          onClick: () => {
+                            const d = buildExportData();
+                            if (d) { exportRSACsv(d); toast("success", "Exported as CSV"); }
+                          },
+                        },
+                        {
+                          label: "Raw data",
+                          format: "JSON",
+                          icon: FileJson,
+                          onClick: () => {
+                            const d = buildExportData();
+                            if (d) { exportRSAJson(d); toast("success", "Exported as JSON"); }
+                          },
+                        },
+                      ]}
+                    />
                     <motion.button
                       whileHover={{ scale: 1.04 }}
                       whileTap={{ scale: 0.96 }}

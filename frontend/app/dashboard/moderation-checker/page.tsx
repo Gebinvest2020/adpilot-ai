@@ -5,12 +5,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Shield, Loader2, CheckCircle2, AlertCircle, AlertTriangle,
   Brain, Eye, TrendingUp, DollarSign, Coins, Heart, Zap, Briefcase,
-  RefreshCw,
+  RefreshCw, Copy, FileText, FileJson, Table,
 } from "lucide-react";
 import { checkModeration } from "@/lib/fake-ai/moderation-checker";
 import type { ModerationCheckResult, ModerationPolicyFlag, ModerationCategory } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { useT, useLocale } from "@/lib/i18n";
+import { addHistoryItem, type HistoryItem } from "@/lib/history";
+import { exportModerationTxt, exportModerationJson, exportModerationCsv } from "@/lib/export";
+import ExportMenu from "@/components/shared/ExportMenu";
+import HistoryPanel from "@/components/shared/HistoryPanel";
+import { useToast } from "@/lib/toast";
 
 // ─── Preset copy constants ─────────────────────────────────────────────────────
 
@@ -350,10 +355,12 @@ export default function ModerationCheckerPage() {
   const m = t.moderation;
   const { locale } = useLocale();
 
+  const { toast } = useToast();
   const [adCopy, setAdCopy]   = useState("");
   const [industry, setIndustry] = useState("");
   const [loading, setLoading]   = useState(false);
   const [result, setResult]     = useState<ModerationCheckResult | null>(null);
+  const [historyToken, setHistoryToken] = useState(0);
 
   const presets = locale === "ru" ? PRESET_COPY_RU : PRESET_COPY_EN;
 
@@ -392,6 +399,44 @@ export default function ModerationCheckerPage() {
 
     setResult(res);
     setLoading(false);
+
+    // Save to history
+    addHistoryItem({
+      type: "moderation",
+      preview: adCopy.split("\n")[0].slice(0, 60),
+      score: res.overallScore,
+      result: res,
+    });
+    setHistoryToken((n) => n + 1);
+    toast(
+      res.overallScore >= 75 ? "success" : res.overallScore >= 45 ? "warning" : "error",
+      `Safety score: ${res.overallScore}/100 — ${res.flags.length} issue${res.flags.length === 1 ? "" : "s"}`
+    );
+  };
+
+  const handleReopen = (item: HistoryItem) => {
+    setResult(item.result as ModerationCheckResult);
+    toast("info", "Loaded from history");
+  };
+
+  const buildExportData = () => {
+    if (!result) return null;
+    return {
+      adText: adCopy,
+      score: result.overallScore,
+      level: result.riskLevel,
+      flags: result.flags.map((f) => ({
+        field: f.triggerText,
+        issue: f.explanation,
+        severity: f.severity,
+        safer: f.saferVersion,
+      })),
+      categories: (result.safeItems ?? []).map((name) => ({
+        name,
+        passed: true,
+      })),
+      checkedAt: new Date().toLocaleString(),
+    };
   };
 
   const handleRecheck = () => {
@@ -501,6 +546,13 @@ export default function ModerationCheckerPage() {
               <><Shield className="w-4 h-4" />{m.checkBtn}</>
             )}
           </motion.button>
+
+          {/* History panel */}
+          <HistoryPanel
+            type="moderation"
+            refreshToken={historyToken}
+            onReopen={handleReopen}
+          />
         </motion.div>
 
         {/* ── RIGHT: Results panel ─────────────────────────────────────────── */}
@@ -548,10 +600,43 @@ export default function ModerationCheckerPage() {
                     />
                     <div className="flex-1 space-y-3 text-center sm:text-left">
                       <div>
-                        <div className="flex items-center gap-2 justify-center sm:justify-start mb-1">
+                        <div className="flex items-center gap-2 justify-center sm:justify-start mb-1 flex-wrap">
                           <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">
                             {m.overallScoreLabel}
                           </p>
+                          <ExportMenu
+                            disabled={!result}
+                            label="Export"
+                            options={[
+                              {
+                                label: "Full report",
+                                format: "TXT",
+                                icon: FileText,
+                                onClick: () => {
+                                  const d = buildExportData();
+                                  if (d) { exportModerationTxt(d); toast("success", "Report exported as TXT"); }
+                                },
+                              },
+                              {
+                                label: "Violations",
+                                format: "CSV",
+                                icon: Table,
+                                onClick: () => {
+                                  const d = buildExportData();
+                                  if (d) { exportModerationCsv(d); toast("success", "Violations exported as CSV"); }
+                                },
+                              },
+                              {
+                                label: "Raw data",
+                                format: "JSON",
+                                icon: FileJson,
+                                onClick: () => {
+                                  const d = buildExportData();
+                                  if (d) { exportModerationJson(d); toast("success", "Exported as JSON"); }
+                                },
+                              },
+                            ]}
+                          />
                           {result.aiMode && (
                             <span className={cn(
                               "flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border",

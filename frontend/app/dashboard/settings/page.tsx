@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   User, Key, Bell, CreditCard, Globe, Shield,
   Copy, Check, Eye, EyeOff, Save, RefreshCw,
+  Download, Zap, BarChart2, Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT, useLocale } from "@/lib/i18n";
+import { getUsageStats, getHistory, type UsageStats } from "@/lib/history";
+import { useToast } from "@/lib/toast";
 
 type Section = "profile" | "api" | "notifications" | "billing" | "privacy";
 
@@ -235,6 +238,7 @@ function MaskedKeyField({ label, value, onCopy, onRegenerate, copied, copyMsg }:
 export default function SettingsPage() {
   const t = useT();
   const { locale, setLocale } = useLocale();
+  const { toast } = useToast();
   const lbl = LABELS[locale] ?? LABELS.en;
 
   const [section, setSection] = useState<Section>("profile");
@@ -243,17 +247,46 @@ export default function SettingsPage() {
   const [notifs, setNotifs] = useState<Record<string, boolean>>({
     api_limit: true, incidents: true, weekly: false, product: true, tips: false,
   });
+  const [usageStats, setUsageStats] = useState<UsageStats>({
+    totalGenerations: 0, rsaCount: 0, ctrCount: 0, moderationCount: 0,
+    avgCtrScore: 0, avgSafetyScore: 0, thisWeek: 0,
+  });
 
   const [profile, setProfile] = useState({ name: "Alex Johnson", email: "alex@company.com", company: "Acme Marketing", role: "" });
 
+  useEffect(() => {
+    setUsageStats(getUsageStats());
+  }, []);
+
   const handleSave = () => {
     setSaved(true);
+    toast("success", "Profile saved");
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleExportData = () => {
+    const data = {
+      profile,
+      history: getHistory(),
+      settings: { locale, notifs },
+      exportedAt: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `adpilot-export-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast("success", "Account data exported");
   };
 
   const handleCopy = (key: string, value: string) => {
     navigator.clipboard.writeText(value);
     setCopied(key);
+    toast("copy", "Copied to clipboard");
     setTimeout(() => setCopied(null), 2000);
   };
 
@@ -342,6 +375,30 @@ export default function SettingsPage() {
                   <button onClick={handleSave} className={cn("flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all", saved ? "bg-emerald-600 text-white" : "bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-lg shadow-indigo-500/20")}>
                     {saved ? <><Check className="w-4 h-4" />{lbl.profile.savedMsg}</> : <><Save className="w-4 h-4" />{lbl.profile.saveBtn}</>}
                   </button>
+                </div>
+
+                {/* AI Usage stats */}
+                <div className="px-6 py-5 border-t border-white/[0.06] bg-white/[0.01]">
+                  <p className="text-[10px] font-bold text-white/25 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <Activity className="w-3 h-3" /> AI Usage This Session
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[
+                      { icon: Zap,       label: "RSA",    value: usageStats.rsaCount,        color: "text-indigo-400" },
+                      { icon: BarChart2, label: "CTR",    value: usageStats.ctrCount,        color: "text-blue-400" },
+                      { icon: Activity,  label: "Checks", value: usageStats.moderationCount, color: "text-emerald-400" },
+                      { icon: Activity,  label: "Total",  value: usageStats.totalGenerations, color: "text-violet-400" },
+                    ].map(({ icon: Icon, label, value, color }) => (
+                      <div key={label} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-center">
+                        <Icon className={cn("w-4 h-4 mx-auto mb-1.5", color)} />
+                        <p className="text-lg font-black text-white">{value}</p>
+                        <p className="text-[10px] text-white/30">{label}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-white/20 mt-3 text-center">
+                    Stored in localStorage · resets when browser data is cleared
+                  </p>
                 </div>
               </motion.div>
             )}
@@ -465,6 +522,20 @@ export default function SettingsPage() {
                     ))}
                   </div>
                 </div>
+                {/* Export data */}
+                <div className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-6">
+                  <p className="text-[10px] font-bold text-white/25 uppercase tracking-widest mb-3">Data Export</p>
+                  <p className="text-sm font-bold text-white mb-1">Export your account data</p>
+                  <p className="text-xs text-white/35 mb-4">Download a JSON file containing your profile, history, and settings. No server calls — everything comes from your browser.</p>
+                  <button
+                    onClick={handleExportData}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/[0.1] text-white/55 hover:text-white hover:border-white/20 font-semibold text-sm transition-all"
+                  >
+                    <Download className="w-4 h-4" />
+                    Export data (JSON)
+                  </button>
+                </div>
+
                 <div className="rounded-2xl border border-red-500/15 bg-red-500/[0.04] p-6">
                   <p className="text-[10px] font-bold text-red-400/60 uppercase tracking-widest mb-3">{lbl.privacy.dangerLabel}</p>
                   <p className="text-sm font-bold text-white mb-1">{lbl.privacy.deleteAccount}</p>

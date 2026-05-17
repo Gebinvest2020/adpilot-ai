@@ -4,12 +4,17 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart2, Wand2, ChevronDown, Brain, Zap, RefreshCw, Loader2,
-  Check, Sparkles, Target, TrendingUp,
+  Check, Sparkles, Target, TrendingUp, FileText, FileJson, Copy,
 } from "lucide-react";
 import { analyzeCTR } from "@/lib/fake-ai/ctr-analyzer";
 import type { CTRAnalysisResult, CTRBreakdownKey } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { useT, useLocale } from "@/lib/i18n";
+import { addHistoryItem, type HistoryItem } from "@/lib/history";
+import { exportCTRTxt, exportCTRJson } from "@/lib/export";
+import ExportMenu from "@/components/shared/ExportMenu";
+import HistoryPanel from "@/components/shared/HistoryPanel";
+import { useToast } from "@/lib/toast";
 
 // ─── AI Mode badge ─────────────────────────────────────────────────────────────
 
@@ -140,12 +145,14 @@ export default function CTRAnalyzerPage() {
   const c = t.ctr;
   const { locale } = useLocale();
 
+  const { toast } = useToast();
   const [adText, setAdText]     = useState("");
   const [keywords, setKeywords] = useState("");
   const [industry, setIndustry] = useState("");
   const [loading, setLoading]   = useState(false);
   const [result, setResult]     = useState<CTRAnalysisResult | null>(null);
   const [showImproved, setShowImproved] = useState(false);
+  const [historyToken, setHistoryToken] = useState(0);
 
   const language = locale === "ru" ? "Russian" : "English";
 
@@ -185,6 +192,37 @@ export default function CTRAnalyzerPage() {
     const res = await resultPromise;
     setResult(res);
     setLoading(false);
+
+    // Save to history
+    addHistoryItem({
+      type: "ctr",
+      preview: adText.split("\n")[0].slice(0, 60),
+      score: res.overallScore,
+      result: res,
+    });
+    setHistoryToken((n) => n + 1);
+    toast("success", `CTR score: ${res.overallScore}/100`);
+  };
+
+  const handleReopen = (item: HistoryItem) => {
+    setResult(item.result as CTRAnalysisResult);
+    setShowImproved(false);
+    toast("info", "Loaded from history");
+  };
+
+  const buildExportData = () => {
+    if (!result) return null;
+    return {
+      adText,
+      keywords,
+      industry,
+      overallScore: result.overallScore,
+      breakdown: result.breakdown,
+      recommendations: result.recommendations,
+      improvedHeadlines: result.improvedHeadlines,
+      improvedDescription: result.improvedDescription,
+      checkedAt: result.checkedAt ?? new Date().toLocaleString(),
+    };
   };
 
   const handleReanalyze = () => {
@@ -285,6 +323,13 @@ export default function CTRAnalyzerPage() {
               <><BarChart2 className="w-4 h-4" />{c.analyzeBtn}</>
             )}
           </motion.button>
+
+          {/* History panel */}
+          <HistoryPanel
+            type="ctr"
+            refreshToken={historyToken}
+            onReopen={handleReopen}
+          />
         </motion.div>
 
         {/* ── RIGHT: Results ───────────────────────────────────────────────── */}
@@ -484,11 +529,37 @@ export default function CTRAnalyzerPage() {
                 <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-6 text-center">
                   <div className="flex items-center justify-between mb-4">
                     <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">{c.overallScoreLabel}</p>
-                    <AiModeBadge
-                      mode={result.aiMode ?? "fallback"}
-                      labelOpenAI={c.aiModeOpenAI}
-                      labelFallback={c.aiModeFallback}
-                    />
+                    <div className="flex items-center gap-2">
+                      <ExportMenu
+                        disabled={!result}
+                        label="Export"
+                        options={[
+                          {
+                            label: "Full report",
+                            format: "TXT",
+                            icon: FileText,
+                            onClick: () => {
+                              const d = buildExportData();
+                              if (d) { exportCTRTxt(d); toast("success", "Exported as TXT"); }
+                            },
+                          },
+                          {
+                            label: "Raw data",
+                            format: "JSON",
+                            icon: FileJson,
+                            onClick: () => {
+                              const d = buildExportData();
+                              if (d) { exportCTRJson(d); toast("success", "Exported as JSON"); }
+                            },
+                          },
+                        ]}
+                      />
+                      <AiModeBadge
+                        mode={result.aiMode ?? "fallback"}
+                        labelOpenAI={c.aiModeOpenAI}
+                        labelFallback={c.aiModeFallback}
+                      />
+                    </div>
                   </div>
                   <ScoreGauge
                     score={result.overallScore}
@@ -521,6 +592,16 @@ export default function CTRAnalyzerPage() {
                     <span className="ml-auto text-[10px] font-bold text-indigo-400/60 bg-indigo-500/8 px-2 py-0.5 rounded-full">
                       {result.recommendations.length} tips
                     </span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(result.recommendations.join("\n"));
+                        toast("copy", "Recommendations copied");
+                      }}
+                      className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/20 hover:text-violet-400 transition-colors"
+                      title="Copy all recommendations"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </button>
                   </div>
                   <div className="p-4 space-y-2.5">
                     {result.recommendations.map((rec, i) => (
