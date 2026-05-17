@@ -27,9 +27,9 @@ export default function Navbar() {
   }, [lastScrollY]);
 
   const navLinks = [
-    { label: t.nav.features, href: "#features" },
+    { label: t.nav.features, href: "/features" },
     { label: t.nav.pricing,  href: "/pricing" },
-    { label: t.nav.docs,     href: "#" },
+    { label: t.nav.docs,     href: "/docs" },
   ];
 
   return (

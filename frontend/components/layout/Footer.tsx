@@ -21,10 +21,10 @@ export default function Footer() {
     {
       heading: f.columns.company,
       links: [
-        { label: f.links.about, href: "#" },
-        { label: f.links.blog, href: "#" },
-        { label: f.links.careers, href: "#" },
-        { label: f.links.pressKit, href: "#" },
+        { label: f.links.about, href: "/about" },
+        { label: f.links.blog, href: "/blog" },
+        { label: f.links.careers, href: "/careers" },
+        { label: f.links.pressKit, href: "/press" },
       ],
     },
     {
@@ -32,7 +32,7 @@ export default function Footer() {
       links: [
         { label: f.links.documentation, href: "/docs" },
         { label: f.links.apiReference,  href: "/docs/api" },
-        { label: f.links.statusPage,    href: "/support" },
+        { label: f.links.statusPage,    href: "/status" },
         { label: f.links.support,       href: "/support" },
       ],
     },
